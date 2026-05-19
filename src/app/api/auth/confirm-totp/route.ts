@@ -1,26 +1,29 @@
-import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import type { Session } from 'next-auth'
+import type { NextRequest } from 'next/server'
+
 // eslint-disable-next-line @typescript-eslint/no-require-imports
 const { authenticator } = require('otplib') as {
   authenticator: { verify: (opts: { token: string; secret: string }) => boolean }
 }
 
-export async function POST(req: NextRequest) {
+export const POST = auth(async (req: NextRequest & { auth: Session | null }) => {
   try {
-    const session = await auth()
-    if (!session?.user?.id) {
-      return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
+    const userId = req.auth?.user?.id
+    if (!userId) {
+      return Response.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { totpCode } = await req.json()
+    const body = await req.json()
+    const totpCode = body?.totpCode
     if (!totpCode) {
-      return NextResponse.json({ success: false, error: 'Code is required' })
+      return Response.json({ success: false, error: 'Code is required' })
     }
 
-    const user = await prisma.user.findUnique({ where: { id: session.user.id } })
+    const user = await prisma.user.findUnique({ where: { id: userId } })
     if (!user?.totpSecret) {
-      return NextResponse.json({ success: false, error: 'No setup in progress. Please refresh and try again.' })
+      return Response.json({ success: false, error: 'No setup in progress. Please refresh and try again.' })
     }
 
     const isValid = authenticator.verify({
@@ -29,17 +32,17 @@ export async function POST(req: NextRequest) {
     })
 
     if (!isValid) {
-      return NextResponse.json({ success: false, error: 'Invalid code — check your authenticator app and try again.' })
+      return Response.json({ success: false, error: 'Invalid code — check your authenticator app and try again.' })
     }
 
     await prisma.user.update({
-      where: { id: session.user.id },
+      where: { id: userId },
       data: { totpEnabled: true },
     })
 
-    return NextResponse.json({ success: true })
+    return Response.json({ success: true })
   } catch (err) {
-    console.error(err)
-    return NextResponse.json({ success: false, error: 'Server error' }, { status: 500 })
+    console.error('[confirm-totp]', err)
+    return Response.json({ success: false, error: 'Server error' }, { status: 500 })
   }
-}
+})

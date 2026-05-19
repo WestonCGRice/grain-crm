@@ -16,11 +16,22 @@ export default function Setup2FAPage() {
 
   useEffect(() => {
     fetch('/api/auth/setup-totp', { method: 'POST' })
-      .then((r) => r.json())
-      .then((d) => { if (d.qrCodeUrl) setData(d) })
+      .then(async (r) => {
+        const d = await r.json()
+        if (!r.ok) throw new Error(d.error ?? `Server error (${r.status})`)
+        return d
+      })
+      .then((d) => {
+        if (d.qrCodeUrl) setData(d)
+        else throw new Error('No QR code returned from server')
+      })
+      .catch((err: unknown) => {
+        const msg = err instanceof Error ? err.message : 'Failed to initialize 2FA setup'
+        setError(msg)
+      })
   }, [])
 
-  async function handleConfirm(e: React.FormEvent<HTMLFormElement>) {
+  async function handleConfirm(e: { preventDefault(): void }) {
     e.preventDefault()
     setLoading(true)
     setError('')
@@ -46,7 +57,14 @@ export default function Setup2FAPage() {
   if (!data) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <Loader2 size={24} className="animate-spin text-gray-400" />
+        {error ? (
+          <div className="card max-w-sm w-full text-center space-y-3">
+            <p className="text-red-600 text-sm font-medium">{error}</p>
+            <p className="text-gray-500 text-xs">Try signing out and back in, then return to this page.</p>
+          </div>
+        ) : (
+          <Loader2 size={24} className="animate-spin text-gray-400" />
+        )}
       </div>
     )
   }
