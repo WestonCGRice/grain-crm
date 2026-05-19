@@ -17,6 +17,10 @@ type ContactFormData = {
   zip: string
   notes: string
   status: string
+  contactType: string
+  riceList: boolean
+  cornList: boolean
+  soybeanList: boolean
   riceAcres: string
   cornAcres: string
   soybeanAcres: string
@@ -31,25 +35,36 @@ type InitialContact = Partial<{
 
 type Props = {
   initial?: InitialContact
+  contactType?: 'ORIGINATION' | 'CUSTOMER'
   onClose: () => void
   onSaved: () => void
 }
 
-const defaultForm: ContactFormData = {
-  farmingEntityName: '',
-  firstName: '', lastName: '', email: '', phone: '',
-  company: '', title: '', address: '', city: '', state: '', zip: '',
-  notes: '', status: 'LEAD',
-  riceAcres: '', cornAcres: '', soybeanAcres: '',
-  riceEstYield: '', cornEstYield: '', soybeanEstYield: '',
+function defaultForm(contactType: string): ContactFormData {
+  return {
+    farmingEntityName: '',
+    firstName: '', lastName: '', email: '', phone: '',
+    company: '', title: '', address: '', city: '', state: '', zip: '',
+    notes: '', status: 'LEAD',
+    contactType,
+    riceList: false, cornList: false, soybeanList: false,
+    riceAcres: '', cornAcres: '', soybeanAcres: '',
+    riceEstYield: '', cornEstYield: '', soybeanEstYield: '',
+  }
 }
 
-function normalizeInitial(initial?: InitialContact): ContactFormData {
-  if (!initial) return defaultForm
-  const result = { ...defaultForm }
-  for (const key of Object.keys(defaultForm) as (keyof ContactFormData)[]) {
+function normalizeInitial(initial?: InitialContact, contactType?: string): ContactFormData {
+  const base = defaultForm(contactType ?? 'ORIGINATION')
+  if (!initial) return base
+  const result = { ...base }
+  for (const key of Object.keys(base) as (keyof ContactFormData)[]) {
     const val = initial[key]
-    if (val != null) (result as Record<string, string>)[key] = String(val)
+    if (val == null) continue
+    if (typeof base[key] === 'boolean') {
+      (result as Record<string, unknown>)[key] = Boolean(val)
+    } else {
+      (result as Record<string, unknown>)[key] = String(val)
+    }
   }
   return result
 }
@@ -62,18 +77,23 @@ const US_STATES = [
   'VA','WA','WV','WI','WY',
 ]
 
-export default function ContactForm({ initial, onClose, onSaved }: Props) {
-  const [form, setForm] = useState<ContactFormData>(() => normalizeInitial(initial))
+export default function ContactForm({ initial, contactType: propContactType, onClose, onSaved }: Props) {
+  const [form, setForm] = useState<ContactFormData>(() => normalizeInitial(initial, propContactType))
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   const isEdit = !!initial?.id
+  const isOrigination = (form.contactType || propContactType || 'ORIGINATION') === 'ORIGINATION'
 
   function set(field: keyof ContactFormData, value: string) {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function toggle(field: 'riceList' | 'cornList' | 'soybeanList') {
+    setForm((f) => ({ ...f, [field]: !f[field] }))
+  }
+
+  async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
     if (!form.firstName.trim() || !form.lastName.trim()) {
       setError('Primary contact first and last name are required.')
@@ -101,13 +121,15 @@ export default function ContactForm({ initial, onClose, onSaved }: Props) {
     }
   }
 
+  const title = isEdit
+    ? (isOrigination ? 'Edit Origination Contact' : 'Edit Grain Customer')
+    : (isOrigination ? 'New Origination Contact' : 'New Grain Customer')
+
   return (
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-gray-900">
-            {isEdit ? 'Edit Contact' : 'New Contact'}
-          </h2>
+          <h2 className="text-lg font-semibold text-gray-900">{title}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
             <X size={20} />
           </button>
@@ -188,41 +210,66 @@ export default function ContactForm({ initial, onClose, onSaved }: Props) {
             </select>
           </div>
 
-          <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Acres</p>
-            <div className="grid grid-cols-3 gap-3">
+          {isOrigination && (
+            <>
               <div>
-                <label className="form-label">Rice Acres</label>
-                <input className="form-input" type="number" min="0" step="0.01" value={form.riceAcres} onChange={(e) => set('riceAcres', e.target.value)} />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Commodity Lists</p>
+                <div className="flex gap-6">
+                  {([
+                    { field: 'riceList' as const, label: 'Rice List' },
+                    { field: 'cornList' as const, label: 'Corn List' },
+                    { field: 'soybeanList' as const, label: 'Soybean List' },
+                  ]).map(({ field, label }) => (
+                    <label key={field} className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={form[field]}
+                        onChange={() => toggle(field)}
+                        className="w-4 h-4 rounded accent-green-600"
+                      />
+                      <span className="text-sm text-gray-700">{label}</span>
+                    </label>
+                  ))}
+                </div>
               </div>
-              <div>
-                <label className="form-label">Corn Acres</label>
-                <input className="form-input" type="number" min="0" step="0.01" value={form.cornAcres} onChange={(e) => set('cornAcres', e.target.value)} />
-              </div>
-              <div>
-                <label className="form-label">Soybean Acres</label>
-                <input className="form-input" type="number" min="0" step="0.01" value={form.soybeanAcres} onChange={(e) => set('soybeanAcres', e.target.value)} />
-              </div>
-            </div>
-          </div>
 
-          <div>
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Est. Yield (bu/acre)</p>
-            <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="form-label">Rice Est. Yield</label>
-                <input className="form-input" type="number" min="0" step="0.01" value={form.riceEstYield} onChange={(e) => set('riceEstYield', e.target.value)} />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Acres</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="form-label">Rice Acres</label>
+                    <input className="form-input" type="number" min="0" step="0.01" value={form.riceAcres} onChange={(e) => set('riceAcres', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="form-label">Corn Acres</label>
+                    <input className="form-input" type="number" min="0" step="0.01" value={form.cornAcres} onChange={(e) => set('cornAcres', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="form-label">Soybean Acres</label>
+                    <input className="form-input" type="number" min="0" step="0.01" value={form.soybeanAcres} onChange={(e) => set('soybeanAcres', e.target.value)} />
+                  </div>
+                </div>
               </div>
+
               <div>
-                <label className="form-label">Corn Est. Yield</label>
-                <input className="form-input" type="number" min="0" step="0.01" value={form.cornEstYield} onChange={(e) => set('cornEstYield', e.target.value)} />
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Est. Yield (bu/acre)</p>
+                <div className="grid grid-cols-3 gap-3">
+                  <div>
+                    <label className="form-label">Rice Est. Yield</label>
+                    <input className="form-input" type="number" min="0" step="0.01" value={form.riceEstYield} onChange={(e) => set('riceEstYield', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="form-label">Corn Est. Yield</label>
+                    <input className="form-input" type="number" min="0" step="0.01" value={form.cornEstYield} onChange={(e) => set('cornEstYield', e.target.value)} />
+                  </div>
+                  <div>
+                    <label className="form-label">Soybean Est. Yield</label>
+                    <input className="form-input" type="number" min="0" step="0.01" value={form.soybeanEstYield} onChange={(e) => set('soybeanEstYield', e.target.value)} />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="form-label">Soybean Est. Yield</label>
-                <input className="form-input" type="number" min="0" step="0.01" value={form.soybeanEstYield} onChange={(e) => set('soybeanEstYield', e.target.value)} />
-              </div>
-            </div>
-          </div>
+            </>
+          )}
 
           <div>
             <label className="form-label">Notes</label>
@@ -237,7 +284,7 @@ export default function ContactForm({ initial, onClose, onSaved }: Props) {
 
           <div className="flex gap-3 pt-2">
             <button type="submit" className="btn-primary flex-1" disabled={loading}>
-              {loading ? 'Saving…' : isEdit ? 'Save Changes' : 'Create Contact'}
+              {loading ? 'Saving…' : isEdit ? 'Save Changes' : (isOrigination ? 'Create Contact' : 'Create Customer')}
             </button>
             <button type="button" className="btn-secondary" onClick={onClose}>
               Cancel

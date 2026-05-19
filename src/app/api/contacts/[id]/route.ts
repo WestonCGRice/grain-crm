@@ -32,7 +32,8 @@ export async function PUT(
     const body = await req.json()
     const {
       farmingEntityName, firstName, lastName, email, phone, company, title,
-      address, city, state, zip, notes, status,
+      address, city, state, zip, notes, status, contactType,
+      riceList, cornList, soybeanList,
       riceAcres, cornAcres, soybeanAcres, riceEstYield, cornEstYield, soybeanEstYield,
     } = body
 
@@ -52,6 +53,10 @@ export async function PUT(
         zip: zip || null,
         notes: notes || null,
         status,
+        ...(contactType ? { contactType } : {}),
+        riceList: riceList ?? false,
+        cornList: cornList ?? false,
+        soybeanList: soybeanList ?? false,
         riceAcres: riceAcres ? parseFloat(riceAcres) : null,
         cornAcres: cornAcres ? parseFloat(cornAcres) : null,
         soybeanAcres: soybeanAcres ? parseFloat(soybeanAcres) : null,

@@ -24,6 +24,11 @@ enum Commodity {
   RICE
 }
 
+enum ContactType {
+  ORIGINATION
+  CUSTOMER
+}
+
 enum ContactStatus {
   LEAD
   ACTIVE
@@ -65,6 +70,10 @@ model Contact {
   zip               String?
   notes             String?
   status            ContactStatus @default(LEAD)
+  contactType       ContactType   @default(ORIGINATION)
+  riceList          Boolean       @default(false)
+  cornList          Boolean       @default(false)
+  soybeanList       Boolean       @default(false)
   riceAcres         Decimal?      @db.Decimal(10, 2)
   cornAcres         Decimal?      @db.Decimal(10, 2)
   soybeanAcres      Decimal?      @db.Decimal(10, 2)
@@ -111,6 +120,7 @@ model Deal {
   commodity      Commodity
   quantity       Decimal    @db.Decimal(12, 2)
   pricePerBushel Decimal    @db.Decimal(10, 4)
+  basis          Decimal?   @db.Decimal(10, 4)
   totalValue     Decimal    @db.Decimal(14, 2)
   status         DealStatus @default(PENDING)
   dealDate       DateTime   @default(now())

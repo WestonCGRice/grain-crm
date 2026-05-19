@@ -6,10 +6,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const search = searchParams.get('search') ?? ''
     const status = searchParams.get('status') ?? ''
+    const contactType = searchParams.get('type') ?? ''
 
     const contacts = await prisma.contact.findMany({
       where: {
         AND: [
+          contactType ? { contactType: contactType as never } : {},
           search
             ? {
                 OR: [
@@ -17,6 +19,7 @@ export async function GET(req: NextRequest) {
                   { lastName: { contains: search, mode: 'insensitive' } },
                   { email: { contains: search, mode: 'insensitive' } },
                   { company: { contains: search, mode: 'insensitive' } },
+                  { farmingEntityName: { contains: search, mode: 'insensitive' } },
                 ],
               }
             : {},
@@ -41,7 +44,8 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       farmingEntityName, firstName, lastName, email, phone, company, title,
-      address, city, state, zip, notes, status,
+      address, city, state, zip, notes, status, contactType,
+      riceList, cornList, soybeanList,
       riceAcres, cornAcres, soybeanAcres, riceEstYield, cornEstYield, soybeanEstYield,
     } = body
 
@@ -60,6 +64,10 @@ export async function POST(req: NextRequest) {
         zip: zip || null,
         notes: notes || null,
         status: status ?? 'LEAD',
+        contactType: contactType ?? 'ORIGINATION',
+        riceList: riceList ?? false,
+        cornList: cornList ?? false,
+        soybeanList: soybeanList ?? false,
         riceAcres: riceAcres ? parseFloat(riceAcres) : null,
         cornAcres: cornAcres ? parseFloat(cornAcres) : null,
         soybeanAcres: soybeanAcres ? parseFloat(soybeanAcres) : null,

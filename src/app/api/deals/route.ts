@@ -25,18 +25,22 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { contactId, commodity, quantity, pricePerBushel, status, dealDate, notes } = body
+    const { contactId, commodity, quantity, pricePerBushel, basis, status, dealDate, notes } = body
 
     const qty = parseFloat(quantity)
-    const price = parseFloat(pricePerBushel)
-    const total = qty * price
+    const futuresPrice = parseFloat(pricePerBushel)
+    const basisVal = basis !== '' && basis != null ? parseFloat(basis) : null
+
+    const cashPrice = basisVal != null ? futuresPrice + basisVal : futuresPrice
+    const total = qty * cashPrice
 
     const deal = await prisma.deal.create({
       data: {
         contactId,
         commodity,
         quantity: qty,
-        pricePerBushel: price,
+        pricePerBushel: futuresPrice,
+        basis: basisVal,
         totalValue: total,
         status: status ?? 'PENDING',
         dealDate: dealDate ? new Date(dealDate) : new Date(),

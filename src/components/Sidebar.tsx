@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, Wheat, BarChart3, Home, TrendingUp, LogOut } from 'lucide-react'
+import { Users, Wheat, BarChart3, Home, TrendingUp, LogOut, ShoppingCart, List } from 'lucide-react'
 import { signOut } from 'next-auth/react'
 
 type NavItem = {
@@ -10,11 +10,17 @@ type NavItem = {
   label: string
   icon: React.ReactNode
   dot?: string
+  matchPrefix?: string
 }
 
 const navItems: NavItem[] = [
   { href: '/', label: 'Dashboard', icon: <Home size={16} /> },
-  { href: '/contacts', label: 'Contacts', icon: <Users size={16} /> },
+  { href: '/contacts', label: 'Grain Origination Contacts', icon: <Users size={16} />, matchPrefix: '/contacts' },
+  { href: '/grain-customers', label: 'Grain Customers', icon: <ShoppingCart size={16} />, matchPrefix: '/grain-customers' },
+]
+
+const commodityListItems: NavItem[] = [
+  { href: '/commodity-list', label: 'Commodity List', icon: <List size={16} /> },
 ]
 
 const commodityItems: NavItem[] = [
@@ -31,7 +37,9 @@ const analyticsItems: NavItem[] = [
 
 function NavLink({ item }: { item: NavItem }) {
   const pathname = usePathname()
-  const active = pathname === item.href
+  const active = item.matchPrefix
+    ? pathname === item.href || pathname.startsWith(item.matchPrefix + '/')
+    : pathname === item.href
   return (
     <Link
       href={item.href}
@@ -83,6 +91,9 @@ export default function Sidebar() {
         ))}
 
         <SectionLabel>Commodity Lists</SectionLabel>
+        {commodityListItems.map((item) => (
+          <NavLink key={item.href} item={item} />
+        ))}
         {commodityItems.map((item) => (
           <NavLink key={item.href} item={item} />
         ))}

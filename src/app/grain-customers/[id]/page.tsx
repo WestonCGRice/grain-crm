@@ -46,16 +46,7 @@ type Contact = {
   zip: string | null
   notes: string | null
   status: string
-  riceList: boolean
-  cornList: boolean
-  soybeanList: boolean
   createdAt: string
-  riceAcres: string | null
-  cornAcres: string | null
-  soybeanAcres: string | null
-  riceEstYield: string | null
-  cornEstYield: string | null
-  soybeanEstYield: string | null
   commodityContacts: { id: string; commodity: string; interestLevel: string; estimatedVolume: string | null }[]
   interactions: Interaction[]
   deals: Deal[]
@@ -73,7 +64,7 @@ const INTERACTION_ICONS: Record<string, React.ReactNode> = {
   MEETING: <Users size={13} />, NOTE: <FileText size={13} />,
 }
 
-export default function ContactDetailPage() {
+export default function GrainCustomerDetailPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
   const [contact, setContact] = useState<Contact | null>(null)
@@ -86,7 +77,7 @@ export default function ContactDetailPage() {
     setLoading(true)
     try {
       const res = await fetch(`/api/contacts/${id}`)
-      if (!res.ok) { router.push('/contacts'); return }
+      if (!res.ok) { router.push('/grain-customers'); return }
       setContact(await res.json())
     } finally {
       setLoading(false)
@@ -98,7 +89,7 @@ export default function ContactDetailPage() {
   async function handleDelete() {
     if (!contact || !confirm(`Delete ${contact.firstName} ${contact.lastName}? This cannot be undone.`)) return
     await fetch(`/api/contacts/${id}`, { method: 'DELETE' })
-    router.push('/contacts')
+    router.push('/grain-customers')
   }
 
   async function deleteInteraction(iid: string) {
@@ -111,17 +102,12 @@ export default function ContactDetailPage() {
   if (!contact) return null
 
   const totalDealValue = contact.deals.reduce((s, d) => s + parseFloat(d.totalValue), 0)
-  const activeLists = [
-    contact.riceList && 'Rice',
-    contact.cornList && 'Corn',
-    contact.soybeanList && 'Soybean',
-  ].filter(Boolean)
 
   return (
     <div>
       {/* Header */}
       <div className="flex items-center gap-4 mb-6">
-        <button onClick={() => router.push('/contacts')} className="text-gray-400 hover:text-gray-700">
+        <button onClick={() => router.push('/grain-customers')} className="text-gray-400 hover:text-gray-700">
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1">
@@ -186,18 +172,6 @@ export default function ContactDetailPage() {
             </div>
           </div>
 
-          {/* Commodity Lists */}
-          {activeLists.length > 0 && (
-            <div className="card">
-              <h2 className="text-sm font-semibold text-gray-900 mb-2">Commodity Lists</h2>
-              <div className="flex flex-wrap gap-1.5">
-                {contact.riceList && <span className="badge badge-blue">Rice List</span>}
-                {contact.cornList && <span className="badge badge-amber">Corn List</span>}
-                {contact.soybeanList && <span className="badge badge-green">Soybean List</span>}
-              </div>
-            </div>
-          )}
-
           {/* Notes */}
           {contact.notes && (
             <div className="card">
@@ -208,79 +182,13 @@ export default function ContactDetailPage() {
             </div>
           )}
 
-          {/* Acreage & Yield */}
-          {(contact.riceAcres || contact.cornAcres || contact.soybeanAcres ||
-            contact.riceEstYield || contact.cornEstYield || contact.soybeanEstYield) && (
-            <div className="card">
-              <h2 className="text-sm font-semibold text-gray-900 mb-3">Acreage &amp; Est. Yield</h2>
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-xs text-gray-500">
-                    <th className="text-left font-medium pb-1">Commodity</th>
-                    <th className="text-right font-medium pb-1">Acres</th>
-                    <th className="text-right font-medium pb-1">Bu/Acre</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {(contact.riceAcres || contact.riceEstYield) && (
-                    <tr>
-                      <td className="py-1.5 text-gray-700">Rice</td>
-                      <td className="py-1.5 text-right text-gray-700">{contact.riceAcres ? formatNumber(contact.riceAcres) : '—'}</td>
-                      <td className="py-1.5 text-right text-gray-700">{contact.riceEstYield ? formatNumber(contact.riceEstYield) : '—'}</td>
-                    </tr>
-                  )}
-                  {(contact.cornAcres || contact.cornEstYield) && (
-                    <tr>
-                      <td className="py-1.5 text-gray-700">Corn</td>
-                      <td className="py-1.5 text-right text-gray-700">{contact.cornAcres ? formatNumber(contact.cornAcres) : '—'}</td>
-                      <td className="py-1.5 text-right text-gray-700">{contact.cornEstYield ? formatNumber(contact.cornEstYield) : '—'}</td>
-                    </tr>
-                  )}
-                  {(contact.soybeanAcres || contact.soybeanEstYield) && (
-                    <tr>
-                      <td className="py-1.5 text-gray-700">Soybeans</td>
-                      <td className="py-1.5 text-right text-gray-700">{contact.soybeanAcres ? formatNumber(contact.soybeanAcres) : '—'}</td>
-                      <td className="py-1.5 text-right text-gray-700">{contact.soybeanEstYield ? formatNumber(contact.soybeanEstYield) : '—'}</td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {/* Commodities */}
-          <div className="card">
-            <h2 className="text-sm font-semibold text-gray-900 mb-3">Commodity Interests</h2>
-            {contact.commodityContacts.length === 0 ? (
-              <p className="text-sm text-gray-400">No commodity assignments</p>
-            ) : (
-              <div className="space-y-2">
-                {contact.commodityContacts.map((cc) => (
-                  <div key={cc.id} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
-                    <span className="text-sm font-medium text-gray-800">
-                      {cc.commodity.charAt(0) + cc.commodity.slice(1).toLowerCase()}
-                    </span>
-                    <div className="text-right">
-                      <span className={`badge badge-${cc.interestLevel === 'HIGH' ? 'green' : cc.interestLevel === 'MEDIUM' ? 'yellow' : 'gray'}`}>
-                        {cc.interestLevel}
-                      </span>
-                      {cc.estimatedVolume && (
-                        <div className="text-xs text-gray-500 mt-0.5">{formatNumber(cc.estimatedVolume)} bu/yr</div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           {/* Stats */}
           <div className="card">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Summary</h2>
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-gray-50 rounded-lg text-center">
                 <div className="text-xl font-bold text-gray-900">{contact.deals.length}</div>
-                <div className="text-xs text-gray-500">Purchases</div>
+                <div className="text-xs text-gray-500">Sales</div>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg text-center">
                 <div className="text-xl font-bold text-gray-900">{contact.interactions.length}</div>
@@ -290,7 +198,7 @@ export default function ContactDetailPage() {
             {contact.deals.length > 0 && (
               <div className="mt-3 p-3 bg-green-50 rounded-lg text-center">
                 <div className="text-lg font-bold text-green-800">{formatCurrency(totalDealValue)}</div>
-                <div className="text-xs text-green-600">Total Purchase Value</div>
+                <div className="text-xs text-green-600">Total Sales Value</div>
               </div>
             )}
           </div>
@@ -334,16 +242,16 @@ export default function ContactDetailPage() {
             )}
           </div>
 
-          {/* Purchase Grain */}
+          {/* Sell Grain */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">Purchase Grain</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Sell Grain</h2>
               <button className="btn-primary flex items-center gap-1.5 text-xs py-1.5" onClick={() => setShowDeal(true)}>
-                <Plus size={13} /> New Purchase
+                <Plus size={13} /> New Sale
               </button>
             </div>
             {contact.deals.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">No purchases yet</p>
+              <p className="text-sm text-gray-400 py-4 text-center">No sales yet</p>
             ) : (
               <table>
                 <thead>
@@ -387,7 +295,7 @@ export default function ContactDetailPage() {
       {showEdit && (
         <ContactForm
           initial={{ ...contact }}
-          contactType="ORIGINATION"
+          contactType="CUSTOMER"
           onClose={() => setShowEdit(false)}
           onSaved={() => { setShowEdit(false); load() }}
         />
@@ -402,7 +310,7 @@ export default function ContactDetailPage() {
       {showDeal && (
         <DealForm
           contactId={id}
-          dealLabel="Purchase Grain"
+          dealLabel="Sell Grain"
           onClose={() => setShowDeal(false)}
           onSaved={() => { setShowDeal(false); load() }}
         />

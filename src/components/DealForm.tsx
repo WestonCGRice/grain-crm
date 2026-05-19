@@ -8,6 +8,7 @@ type Contact = { id: string; firstName: string; lastName: string }
 type Props = {
   commodity?: 'CORN' | 'SOYBEANS' | 'RICE'
   contactId?: string
+  dealLabel?: string
   onClose: () => void
   onSaved: () => void
 }
@@ -15,12 +16,39 @@ type Props = {
 const COMMODITIES = ['CORN', 'SOYBEANS', 'RICE']
 const STATUSES = ['PENDING', 'COMPLETED', 'CANCELLED']
 
-export default function DealForm({ commodity: initCommodity, contactId: initContactId, onClose, onSaved }: Props) {
+function isRice(commodity: string) {
+  return commodity === 'RICE'
+}
+
+function priceLabel(commodity: string) {
+  return isRice(commodity) ? 'Futures Price / CWT' : 'Futures Price / Bushel'
+}
+
+function basisLabel(commodity: string) {
+  return isRice(commodity) ? 'Basis / CWT' : 'Basis / Bushel'
+}
+
+function unitLabel(commodity: string) {
+  return isRice(commodity) ? 'CWT' : 'bu'
+}
+
+function fmt(n: number) {
+  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
+}
+
+export default function DealForm({
+  commodity: initCommodity,
+  contactId: initContactId,
+  dealLabel = 'Deal',
+  onClose,
+  onSaved,
+}: Props) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [contactId, setContactId] = useState(initContactId ?? '')
   const [commodity, setCommodity] = useState(initCommodity ?? 'CORN')
   const [quantity, setQuantity] = useState('')
-  const [pricePerBushel, setPricePerBushel] = useState('')
+  const [futuresPrice, setFuturesPrice] = useState('')
+  const [basis, setBasis] = useState('')
   const [status, setStatus] = useState('PENDING')
   const [dealDate, setDealDate] = useState(new Date().toISOString().slice(0, 10))
   const [notes, setNotes] = useState('')
@@ -33,21 +61,40 @@ export default function DealForm({ commodity: initCommodity, contactId: initCont
     }
   }, [initContactId])
 
-  const total = quantity && pricePerBushel
-    ? (parseFloat(quantity) * parseFloat(pricePerBushel)).toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-    : '—'
+  const qty = parseFloat(quantity) || 0
+  const futures = parseFloat(futuresPrice) || 0
+  const basisNum = basis !== '' ? parseFloat(basis) : null
 
-  async function handleSubmit(e: React.FormEvent) {
+  const hasBothPrices = futuresPrice !== '' && basis !== '' && !isNaN(futures) && basisNum != null && !isNaN(basisNum)
+  const cashPrice = hasBothPrices ? futures + (basisNum ?? 0) : null
+
+  const totalDisplay = (() => {
+    if (!qty) return '—'
+    if (cashPrice != null) return fmt(qty * cashPrice)
+    if (futuresPrice !== '' && !isNaN(futures)) return fmt(qty * futures)
+    return '—'
+  })()
+
+  async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
     if (!contactId) { setError('Please select a contact'); return }
-    if (!quantity || !pricePerBushel) { setError('Quantity and price are required'); return }
+    if (!quantity || !futuresPrice) { setError('Quantity and futures price are required'); return }
     setLoading(true)
     setError('')
     try {
       const res = await fetch('/api/deals', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ contactId, commodity, quantity, pricePerBushel, status, dealDate, notes }),
+        body: JSON.stringify({
+          contactId,
+          commodity,
+          quantity,
+          pricePerBushel: futuresPrice,
+          basis: basis !== '' ? basis : null,
+          status,
+          dealDate,
+          notes,
+        }),
       })
       if (!res.ok) {
         const data = await res.json()
@@ -65,7 +112,7 @@ export default function DealForm({ commodity: initCommodity, contactId: initCont
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-gray-900">New Deal</h2>
+          <h2 className="text-lg font-semibold text-gray-900">New {dealLabel}</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
 
@@ -89,7 +136,12 @@ export default function DealForm({ commodity: initCommodity, contactId: initCont
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="form-label">Commodity</label>
-              <select className="form-input" value={commodity} onChange={(e) => setCommodity(e.target.value as never)} disabled={!!initCommodity}>
+              <select
+                className="form-input"
+                value={commodity}
+                onChange={(e) => { setCommodity(e.target.value as never); setFuturesPrice(''); setBasis('') }}
+                disabled={!!initCommodity}
+              >
                 {COMMODITIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
             </div>
@@ -101,42 +153,63 @@ export default function DealForm({ commodity: initCommodity, contactId: initCont
             </div>
           </div>
 
+          <div>
+            <label className="form-label">Quantity ({unitLabel(commodity)}s) *</label>
+            <input
+              className="form-input"
+              type="number"
+              min="0"
+              step="100"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              required
+              placeholder="e.g. 50000"
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="form-label">Quantity (bushels) *</label>
+              <label className="form-label">{priceLabel(commodity)} *</label>
               <input
                 className="form-input"
                 type="number"
-                min="0"
-                step="100"
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                required
-                placeholder="e.g. 50000"
-              />
-            </div>
-            <div>
-              <label className="form-label">Price / Bushel *</label>
-              <input
-                className="form-input"
-                type="number"
-                min="0"
                 step="0.0001"
-                value={pricePerBushel}
-                onChange={(e) => setPricePerBushel(e.target.value)}
+                value={futuresPrice}
+                onChange={(e) => setFuturesPrice(e.target.value)}
                 required
                 placeholder="e.g. 4.55"
               />
             </div>
+            <div>
+              <label className="form-label">{basisLabel(commodity)}</label>
+              <input
+                className="form-input"
+                type="number"
+                step="0.0001"
+                value={basis}
+                onChange={(e) => setBasis(e.target.value)}
+                placeholder="e.g. -0.25"
+              />
+            </div>
           </div>
 
-          <div className="p-3 bg-green-50 rounded-lg text-sm">
-            <span className="text-green-700 font-medium">Total Value: </span>
-            <span className="text-green-900 font-bold">{total}</span>
+          {/* Cash Price — only when both fields are filled */}
+          {cashPrice != null && (
+            <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg text-sm flex items-center justify-between">
+              <span className="text-blue-700 font-medium">
+                Cash Price / {unitLabel(commodity)}:
+              </span>
+              <span className="text-blue-900 font-bold">{fmt(cashPrice)}</span>
+            </div>
+          )}
+
+          <div className="p-3 bg-green-50 rounded-lg text-sm flex items-center justify-between">
+            <span className="text-green-700 font-medium">Total Value:</span>
+            <span className="text-green-900 font-bold">{totalDisplay}</span>
           </div>
 
           <div>
-            <label className="form-label">Deal Date</label>
+            <label className="form-label">Date</label>
             <input
               className="form-input"
               type="date"
@@ -147,12 +220,18 @@ export default function DealForm({ commodity: initCommodity, contactId: initCont
 
           <div>
             <label className="form-label">Notes</label>
-            <textarea className="form-input" rows={2} value={notes} onChange={(e) => setNotes(e.target.value)} style={{ resize: 'vertical' }} />
+            <textarea
+              className="form-input"
+              rows={2}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              style={{ resize: 'vertical' }}
+            />
           </div>
 
           <div className="flex gap-3 pt-2">
             <button type="submit" className="btn-primary flex-1" disabled={loading}>
-              {loading ? 'Saving…' : 'Save Deal'}
+              {loading ? 'Saving…' : `Save ${dealLabel}`}
             </button>
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
           </div>

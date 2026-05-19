@@ -5,7 +5,6 @@ import { Plus, Search, Edit2, Trash2, Phone, Mail, Building2, Eye } from 'lucide
 import Link from 'next/link'
 import ContactForm from '@/components/ContactForm'
 
-type CommodityContact = { commodity: string }
 type Contact = {
   id: string
   farmingEntityName: string | null
@@ -18,11 +17,7 @@ type Contact = {
   city: string | null
   state: string | null
   status: string
-  riceList: boolean
-  cornList: boolean
-  soybeanList: boolean
   createdAt: string
-  commodityContacts: CommodityContact[]
   _count: { interactions: number; deals: number }
 }
 
@@ -33,13 +28,7 @@ const STATUS_COLORS: Record<string, string> = {
   INACTIVE: 'badge badge-gray',
 }
 
-const COMMODITY_COLORS: Record<string, string> = {
-  CORN: 'badge badge-amber',
-  SOYBEANS: 'badge badge-green',
-  RICE: 'badge badge-blue',
-}
-
-export default function ContactsPage() {
+export default function GrainCustomersPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -51,7 +40,7 @@ export default function ContactsPage() {
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const params = new URLSearchParams({ type: 'ORIGINATION' })
+      const params = new URLSearchParams({ type: 'CUSTOMER' })
       if (search) params.set('search', search)
       if (statusFilter) params.set('status', statusFilter)
       const res = await fetch(`/api/contacts?${params}`)
@@ -79,12 +68,12 @@ export default function ContactsPage() {
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Grain Origination Contacts</h1>
-          <p className="page-subtitle">{contacts.length} contact{contacts.length !== 1 ? 's' : ''}</p>
+          <h1 className="page-title">Grain Customers</h1>
+          <p className="page-subtitle">{contacts.length} customer{contacts.length !== 1 ? 's' : ''}</p>
         </div>
         <button className="btn-primary flex items-center gap-2" onClick={() => { setEditContact(null); setShowForm(true) }}>
           <Plus size={16} />
-          New Origination Contact
+          New Grain Customer
         </button>
       </div>
 
@@ -94,7 +83,7 @@ export default function ContactsPage() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             className="form-input pl-9"
-            placeholder="Search contacts…"
+            placeholder="Search customers…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -113,7 +102,7 @@ export default function ContactsPage() {
           <div className="p-12 text-center text-gray-400">Loading…</div>
         ) : contacts.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
-            No contacts found.{' '}
+            No customers found.{' '}
             <button className="text-green-600 hover:underline" onClick={() => setShowForm(true)}>Add one</button>
           </div>
         ) : (
@@ -125,8 +114,6 @@ export default function ContactsPage() {
                 <th>Contact Info</th>
                 <th>Location</th>
                 <th>Status</th>
-                <th>Lists</th>
-                <th>Commodities</th>
                 <th>Activity</th>
                 <th style={{ width: 120 }}>Actions</th>
               </tr>
@@ -179,37 +166,14 @@ export default function ContactsPage() {
                     </span>
                   </td>
                   <td>
-                    <div className="flex flex-wrap gap-1">
-                      {!c.riceList && !c.cornList && !c.soybeanList
-                        ? <span className="text-gray-400 text-xs">—</span>
-                        : <>
-                            {c.riceList && <span className="badge badge-blue">Rice</span>}
-                            {c.cornList && <span className="badge badge-amber">Corn</span>}
-                            {c.soybeanList && <span className="badge badge-green">Soybean</span>}
-                          </>
-                      }
-                    </div>
-                  </td>
-                  <td>
-                    <div className="flex flex-wrap gap-1">
-                      {c.commodityContacts.length === 0
-                        ? <span className="text-gray-400 text-xs">—</span>
-                        : c.commodityContacts.map((cc) => (
-                          <span key={cc.commodity} className={COMMODITY_COLORS[cc.commodity] ?? 'badge badge-gray'}>
-                            {cc.commodity.charAt(0) + cc.commodity.slice(1).toLowerCase()}
-                          </span>
-                        ))}
-                    </div>
-                  </td>
-                  <td>
                     <div className="text-xs text-gray-500">
-                      <div>{c._count.deals} purchase{c._count.deals !== 1 ? 's' : ''}</div>
+                      <div>{c._count.deals} sale{c._count.deals !== 1 ? 's' : ''}</div>
                       <div>{c._count.interactions} interaction{c._count.interactions !== 1 ? 's' : ''}</div>
                     </div>
                   </td>
                   <td>
                     <div className="flex items-center gap-2">
-                      <Link href={`/contacts/${c.id}`} className="text-gray-400 hover:text-blue-600 transition-colors">
+                      <Link href={`/grain-customers/${c.id}`} className="text-gray-400 hover:text-blue-600 transition-colors">
                         <Eye size={15} />
                       </Link>
                       <button
@@ -237,7 +201,7 @@ export default function ContactsPage() {
       {showForm && (
         <ContactForm
           initial={editContact ?? undefined}
-          contactType="ORIGINATION"
+          contactType="CUSTOMER"
           onClose={() => { setShowForm(false); setEditContact(null) }}
           onSaved={() => { setShowForm(false); setEditContact(null); load() }}
         />
