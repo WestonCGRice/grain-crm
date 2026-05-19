@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "npm run db:migrate && npm start"
+startCommand = "npm run db:migrate && next start -p ${PORT:-3000}"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
