@@ -7,6 +7,17 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id           String   @id @default(cuid())
+  username     String   @unique
+  name         String?
+  passwordHash String
+  totpSecret   String?
+  totpEnabled  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
 enum Commodity {
   CORN
   SOYBEANS

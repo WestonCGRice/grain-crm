@@ -2,7 +2,8 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, Wheat, BarChart3, Home, TrendingUp } from 'lucide-react'
+import { Users, Wheat, BarChart3, Home, TrendingUp, LogOut } from 'lucide-react'
+import { signOut } from 'next-auth/react'
 
 type NavItem = {
   href: string
@@ -92,8 +93,15 @@ export default function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-5 py-3 border-t border-green-800">
-        <p className="text-xs text-green-500">© 2026 GrainCRM</p>
+      <div className="px-3 py-3 border-t border-green-800 space-y-1">
+        <button
+          onClick={() => signOut({ callbackUrl: '/login' })}
+          className="flex items-center gap-3 w-full px-3 py-2 rounded-lg text-sm font-medium text-green-100 hover:bg-green-800 hover:text-white transition-colors"
+        >
+          <LogOut size={16} />
+          Sign Out
+        </button>
+        <p className="px-3 text-xs text-green-600">© 2026 GrainCRM</p>
       </div>
     </aside>
   )
