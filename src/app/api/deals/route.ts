@@ -25,7 +25,7 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { contactId, commodity, quantity, pricePerBushel, basis, status, dealDate, notes } = body
+    const { contactId, commodity, quantity, pricePerBushel, basis, futuresMonth, hedged, status, dealDate, notes } = body
 
     const qty = parseFloat(quantity)
     const futuresPrice = parseFloat(pricePerBushel)
@@ -43,6 +43,8 @@ export async function POST(req: NextRequest) {
         basis: basisVal,
         totalValue: total,
         status: status ?? 'PENDING',
+        futuresMonth: futuresMonth || null,
+        hedged: hedged || null,
         dealDate: dealDate ? new Date(dealDate) : new Date(),
         notes: notes || null,
       },

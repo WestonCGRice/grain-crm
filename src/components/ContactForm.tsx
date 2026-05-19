@@ -143,7 +143,7 @@ export default function ContactForm({ initial, contactType: propContactType, onC
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="form-label">Farming Entity Name</label>
+            <label className="form-label">{isOrigination ? 'Farming Entity Name' : 'Customer Entity Name'}</label>
             <input className="form-input" value={form.farmingEntityName} onChange={(e) => set('farmingEntityName', e.target.value)} />
           </div>
 

@@ -5,65 +5,93 @@ import { X } from 'lucide-react'
 
 type Contact = { id: string; firstName: string; lastName: string }
 
+export type DealInitial = {
+  id: string
+  commodity: string
+  quantity: string
+  pricePerBushel: string
+  basis: string | null
+  status: string
+  futuresMonth: string | null
+  hedged: string | null
+  dealDate: string
+  notes: string | null
+}
+
 type Props = {
   commodity?: 'CORN' | 'SOYBEANS' | 'RICE'
   contactId?: string
   dealLabel?: string
+  initial?: DealInitial
   onClose: () => void
   onSaved: () => void
 }
 
 const COMMODITIES = ['CORN', 'SOYBEANS', 'RICE']
-const STATUSES = ['PENDING', 'COMPLETED', 'CANCELLED']
 
-function isRice(commodity: string) {
-  return commodity === 'RICE'
+const STATUSES = [
+  { value: 'PENDING', label: 'Target' },
+  { value: 'COMPLETED', label: 'Completed' },
+  { value: 'CANCELLED', label: 'Cancelled' },
+]
+
+function isRice(commodity: string) { return commodity === 'RICE' }
+function priceLabel(commodity: string) { return isRice(commodity) ? 'Futures Price / CWT' : 'Futures Price / Bushel' }
+function basisLabel(commodity: string) { return isRice(commodity) ? 'Basis / CWT' : 'Basis / Bushel' }
+function unitLabel(commodity: string) { return isRice(commodity) ? 'CWT' : 'bu' }
+function fmt(n: number) { return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' }) }
+
+function generateFuturesMonths(): string[] {
+  const months: string[] = ['']
+  const now = new Date()
+  for (let i = 0; i < 24; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() + i, 1)
+    months.push(d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }))
+  }
+  return months
 }
 
-function priceLabel(commodity: string) {
-  return isRice(commodity) ? 'Futures Price / CWT' : 'Futures Price / Bushel'
-}
-
-function basisLabel(commodity: string) {
-  return isRice(commodity) ? 'Basis / CWT' : 'Basis / Bushel'
-}
-
-function unitLabel(commodity: string) {
-  return isRice(commodity) ? 'CWT' : 'bu'
-}
-
-function fmt(n: number) {
-  return n.toLocaleString('en-US', { style: 'currency', currency: 'USD' })
-}
+const FUTURES_MONTHS = generateFuturesMonths()
 
 export default function DealForm({
   commodity: initCommodity,
   contactId: initContactId,
   dealLabel = 'Deal',
+  initial,
   onClose,
   onSaved,
 }: Props) {
+  const isEdit = !!initial
+
   const [contacts, setContacts] = useState<Contact[]>([])
   const [contactId, setContactId] = useState(initContactId ?? '')
-  const [commodity, setCommodity] = useState(initCommodity ?? 'CORN')
-  const [quantity, setQuantity] = useState('')
-  const [futuresPrice, setFuturesPrice] = useState('')
-  const [basis, setBasis] = useState('')
-  const [status, setStatus] = useState('PENDING')
-  const [dealDate, setDealDate] = useState(new Date().toISOString().slice(0, 10))
-  const [notes, setNotes] = useState('')
+  const [commodity, setCommodity] = useState(
+    initial?.commodity ?? initCommodity ?? 'CORN'
+  )
+  const [quantity, setQuantity] = useState(initial?.quantity ?? '')
+  const [futuresPrice, setFuturesPrice] = useState(initial?.pricePerBushel ?? '')
+  const [basis, setBasis] = useState(initial?.basis ?? '')
+  const [futuresMonth, setFuturesMonth] = useState(initial?.futuresMonth ?? '')
+  const [hedged, setHedged] = useState(initial?.hedged ?? '')
+  const [status, setStatus] = useState(initial?.status ?? 'PENDING')
+  const [dealDate, setDealDate] = useState(
+    initial?.dealDate
+      ? initial.dealDate.slice(0, 10)
+      : new Date().toISOString().slice(0, 10)
+  )
+  const [notes, setNotes] = useState(initial?.notes ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
-    if (!initContactId) {
+    if (!initContactId && !isEdit) {
       fetch('/api/contacts').then((r) => r.json()).then(setContacts).catch(() => {})
     }
-  }, [initContactId])
+  }, [initContactId, isEdit])
 
   const qty = parseFloat(quantity) || 0
   const futures = parseFloat(futuresPrice) || 0
-  const basisNum = basis !== '' ? parseFloat(basis) : null
+  const basisNum = basis !== '' && basis != null ? parseFloat(basis as string) : null
 
   const hasBothPrices = futuresPrice !== '' && basis !== '' && !isNaN(futures) && basisNum != null && !isNaN(basisNum)
   const cashPrice = hasBothPrices ? futures + (basisNum ?? 0) : null
@@ -77,13 +105,15 @@ export default function DealForm({
 
   async function handleSubmit(e: { preventDefault(): void }) {
     e.preventDefault()
-    if (!contactId) { setError('Please select a contact'); return }
+    if (!contactId && !isEdit) { setError('Please select a contact'); return }
     if (!quantity || !futuresPrice) { setError('Quantity and futures price are required'); return }
     setLoading(true)
     setError('')
     try {
-      const res = await fetch('/api/deals', {
-        method: 'POST',
+      const url = isEdit ? `/api/deals/${initial!.id}` : '/api/deals'
+      const method = isEdit ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           contactId,
@@ -91,6 +121,8 @@ export default function DealForm({
           quantity,
           pricePerBushel: futuresPrice,
           basis: basis !== '' ? basis : null,
+          futuresMonth: futuresMonth || null,
+          hedged: hedged || null,
           status,
           dealDate,
           notes,
@@ -98,7 +130,7 @@ export default function DealForm({
       })
       if (!res.ok) {
         const data = await res.json()
-        throw new Error(data.error ?? 'Failed to save deal')
+        throw new Error(data.error ?? 'Failed to save')
       }
       onSaved()
     } catch (err) {
@@ -112,7 +144,9 @@ export default function DealForm({
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-lg font-semibold text-gray-900">New {dealLabel}</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {isEdit ? `Edit ${dealLabel}` : `New ${dealLabel}`}
+          </h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
         </div>
 
@@ -121,7 +155,7 @@ export default function DealForm({
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {!initContactId && (
+          {!initContactId && !isEdit && (
             <div>
               <label className="form-label">Contact *</label>
               <select className="form-input" value={contactId} onChange={(e) => setContactId(e.target.value)} required>
@@ -140,7 +174,7 @@ export default function DealForm({
                 className="form-input"
                 value={commodity}
                 onChange={(e) => { setCommodity(e.target.value as never); setFuturesPrice(''); setBasis('') }}
-                disabled={!!initCommodity}
+                disabled={!!initCommodity && !isEdit}
               >
                 {COMMODITIES.map((c) => <option key={c} value={c}>{c}</option>)}
               </select>
@@ -148,7 +182,7 @@ export default function DealForm({
             <div>
               <label className="form-label">Status</label>
               <select className="form-input" value={status} onChange={(e) => setStatus(e.target.value)}>
-                {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+                {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
           </div>
@@ -167,30 +201,38 @@ export default function DealForm({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="form-label">{priceLabel(commodity)} *</label>
-              <input
-                className="form-input"
-                type="number"
-                step="0.0001"
-                value={futuresPrice}
-                onChange={(e) => setFuturesPrice(e.target.value)}
-                required
-                placeholder="e.g. 4.55"
-              />
-            </div>
-            <div>
-              <label className="form-label">{basisLabel(commodity)}</label>
-              <input
-                className="form-input"
-                type="number"
-                step="0.0001"
-                value={basis}
-                onChange={(e) => setBasis(e.target.value)}
-                placeholder="e.g. -0.25"
-              />
-            </div>
+          <div>
+            <label className="form-label">{priceLabel(commodity)} *</label>
+            <input
+              className="form-input"
+              type="number"
+              step="0.0001"
+              value={futuresPrice}
+              onChange={(e) => setFuturesPrice(e.target.value)}
+              required
+              placeholder="e.g. 4.55"
+            />
+          </div>
+
+          <div>
+            <label className="form-label">Futures Month</label>
+            <select className="form-input" value={futuresMonth} onChange={(e) => setFuturesMonth(e.target.value)}>
+              {FUTURES_MONTHS.map((m) => (
+                <option key={m} value={m}>{m === '' ? '— Select month —' : m}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className="form-label">{basisLabel(commodity)}</label>
+            <input
+              className="form-input"
+              type="number"
+              step="0.0001"
+              value={basis}
+              onChange={(e) => setBasis(e.target.value)}
+              placeholder="e.g. -0.25"
+            />
           </div>
 
           {/* Cash Price — only when both fields are filled */}
@@ -209,7 +251,16 @@ export default function DealForm({
           </div>
 
           <div>
-            <label className="form-label">Date</label>
+            <label className="form-label">Transaction Hedged</label>
+            <select className="form-input" value={hedged} onChange={(e) => setHedged(e.target.value)}>
+              <option value="">— Select —</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="form-label">Established Date</label>
             <input
               className="form-input"
               type="date"
@@ -231,7 +282,7 @@ export default function DealForm({
 
           <div className="flex gap-3 pt-2">
             <button type="submit" className="btn-primary flex-1" disabled={loading}>
-              {loading ? 'Saving…' : `Save ${dealLabel}`}
+              {loading ? 'Saving…' : isEdit ? 'Save Changes' : `Save ${dealLabel}`}
             </button>
             <button type="button" className="btn-secondary" onClick={onClose}>Cancel</button>
           </div>

@@ -8,19 +8,25 @@ export async function PUT(
   try {
     const { id } = await params
     const body = await req.json()
-    const { quantity, pricePerBushel, status, dealDate, notes } = body
+    const { quantity, pricePerBushel, basis, futuresMonth, hedged, status, dealDate, notes } = body
 
     const qty = parseFloat(quantity)
-    const price = parseFloat(pricePerBushel)
-    const total = qty * price
+    const futuresPrice = parseFloat(pricePerBushel)
+    const basisVal = basis !== '' && basis != null ? parseFloat(basis) : null
+
+    const cashPrice = basisVal != null ? futuresPrice + basisVal : futuresPrice
+    const total = qty * cashPrice
 
     const deal = await prisma.deal.update({
       where: { id },
       data: {
         quantity: qty,
-        pricePerBushel: price,
+        pricePerBushel: futuresPrice,
+        basis: basisVal,
         totalValue: total,
         status,
+        futuresMonth: futuresMonth || null,
+        hedged: hedged || null,
         dealDate: dealDate ? new Date(dealDate) : undefined,
         notes: notes || null,
       },

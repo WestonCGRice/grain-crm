@@ -10,7 +10,7 @@ import {
 import { formatDate, formatCurrency, formatNumber } from '@/lib/utils'
 import ContactForm from '@/components/ContactForm'
 import InteractionForm from '@/components/InteractionForm'
-import DealForm from '@/components/DealForm'
+import DealForm, { type DealInitial } from '@/components/DealForm'
 
 type Interaction = {
   id: string
@@ -27,7 +27,10 @@ type Deal = {
   basis: string | null
   totalValue: string
   status: string
+  futuresMonth: string | null
+  hedged: string | null
   dealDate: string
+  updatedAt: string
   notes: string | null
 }
 
@@ -68,6 +71,9 @@ const STATUS_COLORS: Record<string, string> = {
 const DEAL_STATUS_COLORS: Record<string, string> = {
   PENDING: 'badge badge-yellow', COMPLETED: 'badge badge-green', CANCELLED: 'badge badge-red',
 }
+const DEAL_STATUS_LABELS: Record<string, string> = {
+  PENDING: 'Target', COMPLETED: 'Completed', CANCELLED: 'Cancelled',
+}
 const INTERACTION_ICONS: Record<string, React.ReactNode> = {
   CALL: <PhoneIcon size={13} />, EMAIL: <MailIcon size={13} />,
   MEETING: <Users size={13} />, NOTE: <FileText size={13} />,
@@ -81,6 +87,7 @@ export default function ContactDetailPage() {
   const [showEdit, setShowEdit] = useState(false)
   const [showInteraction, setShowInteraction] = useState(false)
   const [showDeal, setShowDeal] = useState(false)
+  const [editDeal, setEditDeal] = useState<DealInitial | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -107,19 +114,20 @@ export default function ContactDetailPage() {
     load()
   }
 
+  async function deleteDeal(did: string) {
+    if (!confirm('Delete this purchase record? This cannot be undone.')) return
+    await fetch(`/api/deals/${did}`, { method: 'DELETE' })
+    load()
+  }
+
   if (loading) return <div className="p-12 text-center text-gray-400">Loading…</div>
   if (!contact) return null
 
   const totalDealValue = contact.deals.reduce((s, d) => s + parseFloat(d.totalValue), 0)
-  const activeLists = [
-    contact.riceList && 'Rice',
-    contact.cornList && 'Corn',
-    contact.soybeanList && 'Soybean',
-  ].filter(Boolean)
+  const activeLists = [contact.riceList && 'Rice', contact.cornList && 'Corn', contact.soybeanList && 'Soybean'].filter(Boolean)
 
   return (
     <div>
-      {/* Header */}
       <div className="flex items-center gap-4 mb-6">
         <button onClick={() => router.push('/contacts')} className="text-gray-400 hover:text-gray-700">
           <ArrowLeft size={20} />
@@ -152,9 +160,7 @@ export default function ContactDetailPage() {
       </div>
 
       <div className="grid grid-cols-3 gap-6">
-        {/* Left column */}
         <div className="space-y-5">
-          {/* Info */}
           <div className="card">
             <h2 className="text-sm font-semibold text-gray-900 mb-4">Contact Information</h2>
             <div className="space-y-3">
@@ -186,7 +192,6 @@ export default function ContactDetailPage() {
             </div>
           </div>
 
-          {/* Commodity Lists */}
           {activeLists.length > 0 && (
             <div className="card">
               <h2 className="text-sm font-semibold text-gray-900 mb-2">Commodity Lists</h2>
@@ -198,7 +203,6 @@ export default function ContactDetailPage() {
             </div>
           )}
 
-          {/* Notes */}
           {contact.notes && (
             <div className="card">
               <h2 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
@@ -208,7 +212,6 @@ export default function ContactDetailPage() {
             </div>
           )}
 
-          {/* Acreage & Yield */}
           {(contact.riceAcres || contact.cornAcres || contact.soybeanAcres ||
             contact.riceEstYield || contact.cornEstYield || contact.soybeanEstYield) && (
             <div className="card">
@@ -248,7 +251,6 @@ export default function ContactDetailPage() {
             </div>
           )}
 
-          {/* Commodities */}
           <div className="card">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Commodity Interests</h2>
             {contact.commodityContacts.length === 0 ? (
@@ -274,7 +276,6 @@ export default function ContactDetailPage() {
             )}
           </div>
 
-          {/* Stats */}
           <div className="card">
             <h2 className="text-sm font-semibold text-gray-900 mb-3">Summary</h2>
             <div className="grid grid-cols-2 gap-3">
@@ -296,9 +297,7 @@ export default function ContactDetailPage() {
           </div>
         </div>
 
-        {/* Right columns */}
         <div className="col-span-2 space-y-5">
-          {/* Interactions */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-gray-900">Interaction History</h2>
@@ -322,10 +321,7 @@ export default function ContactDetailPage() {
                       </div>
                       {i.notes && <p className="text-sm text-gray-600 mt-0.5 truncate">{i.notes}</p>}
                     </div>
-                    <button
-                      className="text-gray-300 hover:text-red-500 flex-shrink-0"
-                      onClick={() => deleteInteraction(i.id)}
-                    >
+                    <button className="text-gray-300 hover:text-red-500 flex-shrink-0" onClick={() => deleteInteraction(i.id)}>
                       <Trash2 size={13} />
                     </button>
                   </div>
@@ -334,51 +330,80 @@ export default function ContactDetailPage() {
             )}
           </div>
 
-          {/* Purchase Grain */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-gray-900">Purchase Grain</h2>
-              <button className="btn-primary flex items-center gap-1.5 text-xs py-1.5" onClick={() => setShowDeal(true)}>
+              <button className="btn-primary flex items-center gap-1.5 text-xs py-1.5" onClick={() => { setEditDeal(null); setShowDeal(true) }}>
                 <Plus size={13} /> New Purchase
               </button>
             </div>
             {contact.deals.length === 0 ? (
               <p className="text-sm text-gray-400 py-4 text-center">No purchases yet</p>
             ) : (
-              <table>
-                <thead>
-                  <tr>
-                    <th>Commodity</th>
-                    <th>Volume</th>
-                    <th>Futures Price</th>
-                    <th>Basis</th>
-                    <th>Cash Price</th>
-                    <th>Total Value</th>
-                    <th>Status</th>
-                    <th>Date</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {contact.deals.map((d) => {
-                    const unit = d.commodity === 'RICE' ? 'CWT' : 'Bu'
-                    const cashPrice = d.basis != null
-                      ? parseFloat(d.pricePerBushel) + parseFloat(d.basis)
-                      : null
-                    return (
-                    <tr key={d.id}>
-                      <td className="font-medium">{d.commodity.charAt(0) + d.commodity.slice(1).toLowerCase()}</td>
-                      <td>{formatNumber(d.quantity)} {d.commodity === 'RICE' ? 'CWT' : 'bu'}</td>
-                      <td>{formatCurrency(d.pricePerBushel)}/{unit}</td>
-                      <td>{d.basis != null ? `${formatCurrency(d.basis)}/${unit}` : <span className="text-gray-400">—</span>}</td>
-                      <td>{cashPrice != null ? `${formatCurrency(cashPrice)}/${unit}` : <span className="text-gray-400">—</span>}</td>
-                      <td className="font-medium text-green-700">{formatCurrency(d.totalValue)}</td>
-                      <td><span className={DEAL_STATUS_COLORS[d.status]}>{d.status}</span></td>
-                      <td className="text-gray-500 text-xs">{formatDate(d.dealDate)}</td>
+              <div className="overflow-x-auto">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Commodity</th>
+                      <th>Volume</th>
+                      <th>Futures Price</th>
+                      <th>Futures Month</th>
+                      <th>Basis</th>
+                      <th>Cash Price</th>
+                      <th>Total Value</th>
+                      <th>Hedged</th>
+                      <th>Status</th>
+                      <th>Established</th>
+                      <th>Last Updated</th>
+                      <th style={{ width: 64 }}></th>
                     </tr>
-                    )
-                  })}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {contact.deals.map((d) => {
+                      const unit = d.commodity === 'RICE' ? 'CWT' : 'Bu'
+                      const cashPrice = d.basis != null
+                        ? parseFloat(d.pricePerBushel) + parseFloat(d.basis)
+                        : null
+                      return (
+                        <tr key={d.id}>
+                          <td className="font-medium">{d.commodity.charAt(0) + d.commodity.slice(1).toLowerCase()}</td>
+                          <td>{formatNumber(d.quantity)} {d.commodity === 'RICE' ? 'CWT' : 'bu'}</td>
+                          <td>{formatCurrency(d.pricePerBushel)}/{unit}</td>
+                          <td>{d.futuresMonth || <span className="text-gray-400">—</span>}</td>
+                          <td>{d.basis != null ? `${formatCurrency(d.basis)}/${unit}` : <span className="text-gray-400">—</span>}</td>
+                          <td>{cashPrice != null ? `${formatCurrency(cashPrice)}/${unit}` : <span className="text-gray-400">—</span>}</td>
+                          <td className="font-medium text-green-700">{formatCurrency(d.totalValue)}</td>
+                          <td>{d.hedged || <span className="text-gray-400">—</span>}</td>
+                          <td><span className={DEAL_STATUS_COLORS[d.status]}>{DEAL_STATUS_LABELS[d.status] ?? d.status}</span></td>
+                          <td className="text-gray-500 text-xs">{formatDate(d.dealDate)}</td>
+                          <td className="text-gray-500 text-xs">{formatDate(d.updatedAt)}</td>
+                          <td>
+                            <div className="flex items-center gap-2">
+                              <button
+                                className="text-gray-300 hover:text-green-600"
+                                onClick={() => {
+                                  setEditDeal({
+                                    id: d.id, commodity: d.commodity, quantity: d.quantity,
+                                    pricePerBushel: d.pricePerBushel, basis: d.basis,
+                                    status: d.status, futuresMonth: d.futuresMonth,
+                                    hedged: d.hedged, dealDate: d.dealDate, notes: d.notes,
+                                  })
+                                  setShowDeal(true)
+                                }}
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                              <button className="text-gray-300 hover:text-red-500" onClick={() => deleteDeal(d.id)}>
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
             )}
           </div>
         </div>
@@ -401,10 +426,11 @@ export default function ContactDetailPage() {
       )}
       {showDeal && (
         <DealForm
-          contactId={id}
+          contactId={editDeal ? undefined : id}
           dealLabel="Purchase Grain"
-          onClose={() => setShowDeal(false)}
-          onSaved={() => { setShowDeal(false); load() }}
+          initial={editDeal ?? undefined}
+          onClose={() => { setShowDeal(false); setEditDeal(null) }}
+          onSaved={() => { setShowDeal(false); setEditDeal(null); load() }}
         />
       )}
     </div>

@@ -123,6 +123,8 @@ model Deal {
   basis          Decimal?   @db.Decimal(10, 4)
   totalValue     Decimal    @db.Decimal(14, 2)
   status         DealStatus @default(PENDING)
+  futuresMonth   String?
+  hedged         String?
   dealDate       DateTime   @default(now())
   notes          String?
   createdAt      DateTime   @default(now())
