@@ -4,13 +4,7 @@ import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
 import { authConfig } from '@/auth.config'
 
-// otplib named exports aren't resolved by bundler moduleResolution
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { authenticator } = require('otplib') as {
-  authenticator: {
-    verify: (opts: { token: string; secret: string }) => boolean
-  }
-}
+import { verifyTOTP } from '@/lib/totp'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -37,10 +31,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
           if (user.totpEnabled && user.totpSecret) {
             if (!totpCode) return null
-            const isValid = authenticator.verify({
-              token: totpCode.replace(/\s/g, ''),
-              secret: user.totpSecret,
-            })
+            const isValid = verifyTOTP(totpCode, user.totpSecret)
             if (!isValid) return null
           }
 

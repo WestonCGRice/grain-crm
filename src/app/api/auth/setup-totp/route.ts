@@ -3,14 +3,7 @@ import prisma from '@/lib/prisma'
 import QRCode from 'qrcode'
 import type { Session } from 'next-auth'
 import type { NextRequest } from 'next/server'
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { authenticator } = require('otplib') as {
-  authenticator: {
-    generateSecret: () => string
-    keyuri: (account: string, service: string, secret: string) => string
-  }
-}
+import { generateSecret, keyuri } from '@/lib/totp'
 
 // Use the auth() HOC so the session is read from the request object directly,
 // avoiding the Next.js 16 async cookies() incompatibility with await auth().
@@ -21,8 +14,8 @@ export const POST = auth(async (req: NextRequest & { auth: Session | null }) => 
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const secret = authenticator.generateSecret()
-    const otpAuthUrl = authenticator.keyuri(
+    const secret = generateSecret()
+    const otpAuthUrl = keyuri(
       req.auth?.user?.name ?? userId,
       'GrainCRM',
       secret

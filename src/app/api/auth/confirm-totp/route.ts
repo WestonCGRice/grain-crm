@@ -2,11 +2,7 @@ import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import type { Session } from 'next-auth'
 import type { NextRequest } from 'next/server'
-
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const { authenticator } = require('otplib') as {
-  authenticator: { verify: (opts: { token: string; secret: string }) => boolean }
-}
+import { verifyTOTP } from '@/lib/totp'
 
 export const POST = auth(async (req: NextRequest & { auth: Session | null }) => {
   try {
@@ -26,10 +22,7 @@ export const POST = auth(async (req: NextRequest & { auth: Session | null }) => 
       return Response.json({ success: false, error: 'No setup in progress. Please refresh and try again.' })
     }
 
-    const isValid = authenticator.verify({
-      token: String(totpCode).replace(/\s/g, ''),
-      secret: user.totpSecret,
-    })
+    const isValid = verifyTOTP(String(totpCode), user.totpSecret)
 
     if (!isValid) {
       return Response.json({ success: false, error: 'Invalid code — check your authenticator app and try again.' })
