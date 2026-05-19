@@ -31,13 +31,15 @@ export async function PUT(
     const { id } = await params
     const body = await req.json()
     const {
-      firstName, lastName, email, phone, company, title,
+      farmingEntityName, firstName, lastName, email, phone, company, title,
       address, city, state, zip, notes, status,
+      riceAcres, cornAcres, soybeanAcres, riceEstYield, cornEstYield, soybeanEstYield,
     } = body
 
     const contact = await prisma.contact.update({
       where: { id },
       data: {
+        farmingEntityName: farmingEntityName || null,
         firstName,
         lastName,
         email: email || null,
@@ -50,6 +52,12 @@ export async function PUT(
         zip: zip || null,
         notes: notes || null,
         status,
+        riceAcres: riceAcres ? parseFloat(riceAcres) : null,
+        cornAcres: cornAcres ? parseFloat(cornAcres) : null,
+        soybeanAcres: soybeanAcres ? parseFloat(soybeanAcres) : null,
+        riceEstYield: riceEstYield ? parseFloat(riceEstYield) : null,
+        cornEstYield: cornEstYield ? parseFloat(cornEstYield) : null,
+        soybeanEstYield: soybeanEstYield ? parseFloat(soybeanEstYield) : null,
       },
     })
     return NextResponse.json(contact)

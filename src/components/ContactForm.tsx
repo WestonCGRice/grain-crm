@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { X } from 'lucide-react'
 
 type ContactFormData = {
+  farmingEntityName: string
   firstName: string
   lastName: string
   email: string
@@ -16,6 +17,12 @@ type ContactFormData = {
   zip: string
   notes: string
   status: string
+  riceAcres: string
+  cornAcres: string
+  soybeanAcres: string
+  riceEstYield: string
+  cornEstYield: string
+  soybeanEstYield: string
 }
 
 type InitialContact = Partial<{
@@ -29,9 +36,12 @@ type Props = {
 }
 
 const defaultForm: ContactFormData = {
+  farmingEntityName: '',
   firstName: '', lastName: '', email: '', phone: '',
   company: '', title: '', address: '', city: '', state: '', zip: '',
   notes: '', status: 'LEAD',
+  riceAcres: '', cornAcres: '', soybeanAcres: '',
+  riceEstYield: '', cornEstYield: '', soybeanEstYield: '',
 }
 
 function normalizeInitial(initial?: InitialContact): ContactFormData {
@@ -63,10 +73,10 @@ export default function ContactForm({ initial, onClose, onSaved }: Props) {
     setForm((f) => ({ ...f, [field]: value }))
   }
 
-  async function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     if (!form.firstName.trim() || !form.lastName.trim()) {
-      setError('First and last name are required.')
+      setError('Primary contact first and last name are required.')
       return
     }
     setLoading(true)
@@ -110,13 +120,18 @@ export default function ContactForm({ initial, onClose, onSaved }: Props) {
         )}
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="form-label">Farming Entity Name</label>
+            <input className="form-input" value={form.farmingEntityName} onChange={(e) => set('farmingEntityName', e.target.value)} />
+          </div>
+
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="form-label">First Name *</label>
+              <label className="form-label">Primary Contact First Name *</label>
               <input className="form-input" value={form.firstName} onChange={(e) => set('firstName', e.target.value)} required />
             </div>
             <div>
-              <label className="form-label">Last Name *</label>
+              <label className="form-label">Primary Contact Last Name *</label>
               <input className="form-input" value={form.lastName} onChange={(e) => set('lastName', e.target.value)} required />
             </div>
           </div>
@@ -171,6 +186,42 @@ export default function ContactForm({ initial, onClose, onSaved }: Props) {
             <select className="form-input" value={form.status} onChange={(e) => set('status', e.target.value)}>
               {STATUS_OPTIONS.map((s) => <option key={s} value={s}>{s}</option>)}
             </select>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Acres</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="form-label">Rice Acres</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={form.riceAcres} onChange={(e) => set('riceAcres', e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Corn Acres</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={form.cornAcres} onChange={(e) => set('cornAcres', e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Soybean Acres</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={form.soybeanAcres} onChange={(e) => set('soybeanAcres', e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Est. Yield (bu/acre)</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="form-label">Rice Est. Yield</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={form.riceEstYield} onChange={(e) => set('riceEstYield', e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Corn Est. Yield</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={form.cornEstYield} onChange={(e) => set('cornEstYield', e.target.value)} />
+              </div>
+              <div>
+                <label className="form-label">Soybean Est. Yield</label>
+                <input className="form-input" type="number" min="0" step="0.01" value={form.soybeanEstYield} onChange={(e) => set('soybeanEstYield', e.target.value)} />
+              </div>
+            </div>
           </div>
 
           <div>

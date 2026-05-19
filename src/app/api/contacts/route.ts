@@ -40,12 +40,14 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
     const {
-      firstName, lastName, email, phone, company, title,
+      farmingEntityName, firstName, lastName, email, phone, company, title,
       address, city, state, zip, notes, status,
+      riceAcres, cornAcres, soybeanAcres, riceEstYield, cornEstYield, soybeanEstYield,
     } = body
 
     const contact = await prisma.contact.create({
       data: {
+        farmingEntityName: farmingEntityName || null,
         firstName,
         lastName,
         email: email || null,
@@ -58,6 +60,12 @@ export async function POST(req: NextRequest) {
         zip: zip || null,
         notes: notes || null,
         status: status ?? 'LEAD',
+        riceAcres: riceAcres ? parseFloat(riceAcres) : null,
+        cornAcres: cornAcres ? parseFloat(cornAcres) : null,
+        soybeanAcres: soybeanAcres ? parseFloat(soybeanAcres) : null,
+        riceEstYield: riceEstYield ? parseFloat(riceEstYield) : null,
+        cornEstYield: cornEstYield ? parseFloat(cornEstYield) : null,
+        soybeanEstYield: soybeanEstYield ? parseFloat(soybeanEstYield) : null,
       },
     })
     return NextResponse.json(contact, { status: 201 })

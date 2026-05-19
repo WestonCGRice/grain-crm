@@ -40,21 +40,28 @@ enum InterestLevel {
 }
 
 model Contact {
-  id        String        @id @default(cuid())
-  firstName String
-  lastName  String
-  email     String?       @unique
-  phone     String?
-  company   String?
-  title     String?
-  address   String?
-  city      String?
-  state     String?
-  zip       String?
-  notes     String?
-  status    ContactStatus @default(LEAD)
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id                String        @id @default(cuid())
+  farmingEntityName String?
+  firstName         String
+  lastName          String
+  email             String?       @unique
+  phone             String?
+  company           String?
+  title             String?
+  address           String?
+  city              String?
+  state             String?
+  zip               String?
+  notes             String?
+  status            ContactStatus @default(LEAD)
+  riceAcres         Decimal?      @db.Decimal(10, 2)
+  cornAcres         Decimal?      @db.Decimal(10, 2)
+  soybeanAcres      Decimal?      @db.Decimal(10, 2)
+  riceEstYield      Decimal?      @db.Decimal(10, 2)
+  cornEstYield      Decimal?      @db.Decimal(10, 2)
+  soybeanEstYield   Decimal?      @db.Decimal(10, 2)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
 
   commodityContacts CommodityContact[]
   interactions      Interaction[]

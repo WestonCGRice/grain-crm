@@ -32,6 +32,7 @@ type Deal = {
 
 type Contact = {
   id: string
+  farmingEntityName: string | null
   firstName: string
   lastName: string
   email: string | null
@@ -45,6 +46,12 @@ type Contact = {
   notes: string | null
   status: string
   createdAt: string
+  riceAcres: string | null
+  cornAcres: string | null
+  soybeanAcres: string | null
+  riceEstYield: string | null
+  cornEstYield: string | null
+  soybeanEstYield: string | null
   commodityContacts: { id: string; commodity: string; interestLevel: string; estimatedVolume: string | null }[]
   interactions: Interaction[]
   deals: Deal[]
@@ -109,6 +116,12 @@ export default function ContactDetailPage() {
           <ArrowLeft size={20} />
         </button>
         <div className="flex-1">
+          {contact.farmingEntityName && (
+            <div className="flex items-center gap-2 mb-0.5">
+              <Building2 size={14} className="text-gray-400" />
+              <span className="text-base font-semibold text-gray-700">{contact.farmingEntityName}</span>
+            </div>
+          )}
           <div className="flex items-center gap-3">
             <h1 className="page-title">{contact.firstName} {contact.lastName}</h1>
             <span className={STATUS_COLORS[contact.status]}>{contact.status}</span>
@@ -171,6 +184,46 @@ export default function ContactDetailPage() {
                 <FileText size={14} /> Notes
               </h2>
               <p className="text-sm text-gray-600 whitespace-pre-wrap">{contact.notes}</p>
+            </div>
+          )}
+
+          {/* Acreage & Yield */}
+          {(contact.riceAcres || contact.cornAcres || contact.soybeanAcres ||
+            contact.riceEstYield || contact.cornEstYield || contact.soybeanEstYield) && (
+            <div className="card">
+              <h2 className="text-sm font-semibold text-gray-900 mb-3">Acreage &amp; Est. Yield</h2>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-gray-500">
+                    <th className="text-left font-medium pb-1">Commodity</th>
+                    <th className="text-right font-medium pb-1">Acres</th>
+                    <th className="text-right font-medium pb-1">Bu/Acre</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {(contact.riceAcres || contact.riceEstYield) && (
+                    <tr>
+                      <td className="py-1.5 text-gray-700">Rice</td>
+                      <td className="py-1.5 text-right text-gray-700">{contact.riceAcres ? formatNumber(contact.riceAcres) : '—'}</td>
+                      <td className="py-1.5 text-right text-gray-700">{contact.riceEstYield ? formatNumber(contact.riceEstYield) : '—'}</td>
+                    </tr>
+                  )}
+                  {(contact.cornAcres || contact.cornEstYield) && (
+                    <tr>
+                      <td className="py-1.5 text-gray-700">Corn</td>
+                      <td className="py-1.5 text-right text-gray-700">{contact.cornAcres ? formatNumber(contact.cornAcres) : '—'}</td>
+                      <td className="py-1.5 text-right text-gray-700">{contact.cornEstYield ? formatNumber(contact.cornEstYield) : '—'}</td>
+                    </tr>
+                  )}
+                  {(contact.soybeanAcres || contact.soybeanEstYield) && (
+                    <tr>
+                      <td className="py-1.5 text-gray-700">Soybeans</td>
+                      <td className="py-1.5 text-right text-gray-700">{contact.soybeanAcres ? formatNumber(contact.soybeanAcres) : '—'}</td>
+                      <td className="py-1.5 text-right text-gray-700">{contact.soybeanEstYield ? formatNumber(contact.soybeanEstYield) : '—'}</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
             </div>
           )}
 

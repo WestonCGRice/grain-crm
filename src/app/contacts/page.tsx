@@ -8,6 +8,7 @@ import ContactForm from '@/components/ContactForm'
 type CommodityContact = { commodity: string }
 type Contact = {
   id: string
+  farmingEntityName: string | null
   firstName: string
   lastName: string
   email: string | null
@@ -130,6 +131,9 @@ export default function ContactsPage() {
               {contacts.map((c) => (
                 <tr key={c.id}>
                   <td>
+                    {c.farmingEntityName && (
+                      <div className="text-xs font-medium text-gray-500">{c.farmingEntityName}</div>
+                    )}
                     <div className="font-medium text-gray-900">
                       {c.firstName} {c.lastName}
                     </div>
