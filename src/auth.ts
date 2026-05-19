@@ -22,31 +22,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         totpCode: {},
       },
       async authorize(credentials) {
-        const username = String(credentials.username ?? '')
-        const password = String(credentials.password ?? '')
-        const totpCode = String(credentials.totpCode ?? '')
+        try {
+          const username = String(credentials.username ?? '')
+          const password = String(credentials.password ?? '')
+          const totpCode = String(credentials.totpCode ?? '')
 
-        if (!username || !password) return null
+          if (!username || !password) return null
 
-        const user = await prisma.user.findUnique({ where: { username } })
-        if (!user) return null
+          const user = await prisma.user.findUnique({ where: { username } })
+          if (!user) return null
 
-        const passwordValid = await bcrypt.compare(password, user.passwordHash)
-        if (!passwordValid) return null
+          const passwordValid = await bcrypt.compare(password, user.passwordHash)
+          if (!passwordValid) return null
 
-        if (user.totpEnabled && user.totpSecret) {
-          if (!totpCode) return null
-          const isValid = authenticator.verify({
-            token: totpCode.replace(/\s/g, ''),
-            secret: user.totpSecret,
-          })
-          if (!isValid) return null
-        }
+          if (user.totpEnabled && user.totpSecret) {
+            if (!totpCode) return null
+            const isValid = authenticator.verify({
+              token: totpCode.replace(/\s/g, ''),
+              secret: user.totpSecret,
+            })
+            if (!isValid) return null
+          }
 
-        return {
-          id: user.id,
-          name: user.name ?? user.username,
-          totpEnabled: user.totpEnabled,
+          return {
+            id: user.id,
+            name: user.name ?? user.username,
+            totpEnabled: user.totpEnabled,
+          }
+        } catch (err) {
+          console.error('[authorize] Error:', err)
+          return null
         }
       },
     }),
