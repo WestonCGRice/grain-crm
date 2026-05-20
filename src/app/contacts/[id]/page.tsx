@@ -12,12 +12,7 @@ import ContactForm from '@/components/ContactForm'
 import InteractionForm from '@/components/InteractionForm'
 import DealForm, { type DealInitial } from '@/components/DealForm'
 
-type Interaction = {
-  id: string
-  type: string
-  date: string
-  notes: string | null
-}
+type Interaction = { id: string; type: string; date: string; notes: string | null }
 
 type Deal = {
   id: string
@@ -27,7 +22,10 @@ type Deal = {
   basis: string | null
   totalValue: string
   status: string
+  contractNumber: string | null
+  cropYear: string | null
   futuresMonth: string | null
+  futuresYear: string | null
   hedged: string | null
   dealDate: string
   updatedAt: string
@@ -115,7 +113,7 @@ export default function ContactDetailPage() {
   }
 
   async function deleteDeal(did: string) {
-    if (!confirm('Delete this purchase record? This cannot be undone.')) return
+    if (!confirm('Delete this contract? This cannot be undone.')) return
     await fetch(`/api/deals/${did}`, { method: 'DELETE' })
     load()
   }
@@ -281,7 +279,7 @@ export default function ContactDetailPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="p-3 bg-gray-50 rounded-lg text-center">
                 <div className="text-xl font-bold text-gray-900">{contact.deals.length}</div>
-                <div className="text-xs text-gray-500">Purchases</div>
+                <div className="text-xs text-gray-500">Contracts</div>
               </div>
               <div className="p-3 bg-gray-50 rounded-lg text-center">
                 <div className="text-xl font-bold text-gray-900">{contact.interactions.length}</div>
@@ -291,7 +289,7 @@ export default function ContactDetailPage() {
             {contact.deals.length > 0 && (
               <div className="mt-3 p-3 bg-green-50 rounded-lg text-center">
                 <div className="text-lg font-bold text-green-800">{formatCurrency(totalDealValue)}</div>
-                <div className="text-xs text-green-600">Total Purchase Value</div>
+                <div className="text-xs text-green-600">Total Contract Value</div>
               </div>
             )}
           </div>
@@ -332,28 +330,31 @@ export default function ContactDetailPage() {
 
           <div className="card">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-gray-900">Purchase Grain</h2>
+              <h2 className="text-sm font-semibold text-gray-900">Purchase Grain Contracts</h2>
               <button className="btn-primary flex items-center gap-1.5 text-xs py-1.5" onClick={() => { setEditDeal(null); setShowDeal(true) }}>
-                <Plus size={13} /> New Purchase
+                <Plus size={13} /> New Contract
               </button>
             </div>
             {contact.deals.length === 0 ? (
-              <p className="text-sm text-gray-400 py-4 text-center">No purchases yet</p>
+              <p className="text-sm text-gray-400 py-4 text-center">No contracts yet</p>
             ) : (
               <div className="overflow-x-auto">
                 <table>
                   <thead>
                     <tr>
+                      <th>Contract #</th>
                       <th>Commodity</th>
                       <th>Volume</th>
                       <th>Futures Price</th>
+                      <th>Crop Year</th>
                       <th>Futures Month</th>
+                      <th>Futures Year</th>
                       <th>Basis</th>
                       <th>Cash Price</th>
                       <th>Total Value</th>
                       <th>Hedged</th>
                       <th>Status</th>
-                      <th>Established</th>
+                      <th>Contract Date</th>
                       <th>Last Updated</th>
                       <th style={{ width: 64 }}></th>
                     </tr>
@@ -366,10 +367,15 @@ export default function ContactDetailPage() {
                         : null
                       return (
                         <tr key={d.id}>
+                          <td className="font-mono text-xs font-semibold text-gray-700">
+                            {d.contractNumber || <span className="text-gray-400">—</span>}
+                          </td>
                           <td className="font-medium">{d.commodity.charAt(0) + d.commodity.slice(1).toLowerCase()}</td>
                           <td>{formatNumber(d.quantity)} {d.commodity === 'RICE' ? 'CWT' : 'bu'}</td>
                           <td>{formatCurrency(d.pricePerBushel)}/{unit}</td>
+                          <td>{d.cropYear || <span className="text-gray-400">—</span>}</td>
                           <td>{d.futuresMonth || <span className="text-gray-400">—</span>}</td>
+                          <td>{d.futuresYear || <span className="text-gray-400">—</span>}</td>
                           <td>{d.basis != null ? `${formatCurrency(d.basis)}/${unit}` : <span className="text-gray-400">—</span>}</td>
                           <td>{cashPrice != null ? `${formatCurrency(cashPrice)}/${unit}` : <span className="text-gray-400">—</span>}</td>
                           <td className="font-medium text-green-700">{formatCurrency(d.totalValue)}</td>
@@ -385,8 +391,10 @@ export default function ContactDetailPage() {
                                   setEditDeal({
                                     id: d.id, commodity: d.commodity, quantity: d.quantity,
                                     pricePerBushel: d.pricePerBushel, basis: d.basis,
-                                    status: d.status, futuresMonth: d.futuresMonth,
-                                    hedged: d.hedged, dealDate: d.dealDate, notes: d.notes,
+                                    status: d.status, contractNumber: d.contractNumber,
+                                    cropYear: d.cropYear, futuresMonth: d.futuresMonth,
+                                    futuresYear: d.futuresYear, hedged: d.hedged,
+                                    dealDate: d.dealDate, notes: d.notes,
                                   })
                                   setShowDeal(true)
                                 }}
@@ -428,6 +436,7 @@ export default function ContactDetailPage() {
         <DealForm
           contactId={editDeal ? undefined : id}
           dealLabel="Purchase Grain"
+          dealType="PURCHASE"
           initial={editDeal ?? undefined}
           onClose={() => { setShowDeal(false); setEditDeal(null) }}
           onSaved={() => { setShowDeal(false); setEditDeal(null); load() }}

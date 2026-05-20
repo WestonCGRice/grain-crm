@@ -167,7 +167,7 @@ export default function GrainCustomersPage() {
                   </td>
                   <td>
                     <div className="text-xs text-gray-500">
-                      <div>{c._count.deals} sale{c._count.deals !== 1 ? 's' : ''}</div>
+                      <div>{c._count.deals} contract{c._count.deals !== 1 ? 's' : ''}</div>
                       <div>{c._count.interactions} interaction{c._count.interactions !== 1 ? 's' : ''}</div>
                     </div>
                   </td>
