@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { sendContractNotificationEmail } from '@/lib/email'
 
 async function generateContractNumber(dealType: 'PURCHASE' | 'SALE'): Promise<string> {
   const prefix = dealType === 'PURCHASE' ? '1' : '9'
@@ -14,16 +16,29 @@ async function generateContractNumber(dealType: 'PURCHASE' | 'SALE'): Promise<st
   return String(parseInt(latest.contractNumber, 10) + 1)
 }
 
+const COMPLETED_STATUSES = ['COMPLETED', 'COMPLETED_UNFILLED', 'COMPLETED_FILLED', 'SETTLED']
+
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url)
     const contactId = searchParams.get('contactId')
     const commodity = searchParams.get('commodity')
+    const status = searchParams.get('status')
+    const statuses = searchParams.get('statuses')
+    const includeDeleted = searchParams.get('includeDeleted') === 'true'
+
+    const statusFilter = statuses
+      ? { status: { in: statuses.split(',') as never[] } }
+      : status
+        ? { status: status as never }
+        : {}
 
     const deals = await prisma.deal.findMany({
       where: {
         ...(contactId ? { contactId } : {}),
         ...(commodity ? { commodity: commodity as never } : {}),
+        ...statusFilter,
+        ...(!includeDeleted ? { deletedAt: null } : {}),
       },
       include: { contact: true },
       orderBy: { dealDate: 'desc' },
@@ -37,6 +52,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
+    const session = await auth()
+    const userId = session?.user?.id
+
     const body = await req.json()
     const {
       contactId, commodity, quantity, pricePerBushel, basis,
@@ -51,29 +69,74 @@ export async function POST(req: NextRequest) {
     const total = qty * cashPrice
 
     let contractNumber: string | null = null
-    if (status === 'COMPLETED' && dealType) {
+    const isCompleted = COMPLETED_STATUSES.includes(status)
+    if (isCompleted && dealType) {
       contractNumber = await generateContractNumber(dealType as 'PURCHASE' | 'SALE')
     }
 
     const deal = await prisma.deal.create({
       data: {
-        contactId,
-        commodity,
-        quantity: qty,
-        pricePerBushel: futuresPrice,
-        basis: basisVal,
+        contactId, commodity,
+        quantity: qty, pricePerBushel: futuresPrice, basis: basisVal,
         totalValue: total,
         status: status ?? 'PENDING',
         contractNumber,
-        cropYear: cropYear || null,
-        futuresMonth: futuresMonth || null,
-        futuresYear: futuresYear || null,
-        hedged: hedged || null,
+        cropYear: cropYear || null, futuresMonth: futuresMonth || null,
+        futuresYear: futuresYear || null, hedged: hedged || null,
         dealDate: dealDate ? new Date(dealDate) : new Date(),
         notes: notes || null,
+        dealType: dealType || null,
       },
       include: { contact: true },
     })
+
+    // Audit log
+    if (userId) {
+      await prisma.contractAuditLog.create({
+        data: {
+          dealId: deal.id,
+          userId,
+          action: 'CREATED',
+          toStatus: deal.status,
+          contractNumber: deal.contractNumber,
+          commodity: deal.commodity,
+          contactName: `${deal.contact.firstName} ${deal.contact.lastName}`,
+        },
+      })
+    }
+
+    // Contract notification emails
+    try {
+      const notifyUsers = await prisma.user.findMany({
+        where: { contractNotifications: true, email: { not: null } },
+        select: { email: true },
+      })
+      const emails = notifyUsers.map((u) => u.email!).filter(Boolean)
+      if (emails.length > 0) {
+        const cashPriceDisplay = basisVal != null ? String(futuresPrice + basisVal) : null
+        await sendContractNotificationEmail(emails, {
+          dealLabel: dealType === 'SALE' ? 'Sell Grain' : 'Purchase Grain',
+          contractNumber: deal.contractNumber,
+          commodity: deal.commodity,
+          contactName: `${deal.contact.firstName} ${deal.contact.lastName}`,
+          quantity: String(qty),
+          futuresPrice: String(futuresPrice),
+          basis: basisVal != null ? String(basisVal) : null,
+          cashPrice: cashPriceDisplay,
+          totalValue: String(total),
+          cropYear: deal.cropYear,
+          futuresMonth: deal.futuresMonth,
+          futuresYear: deal.futuresYear,
+          hedged: deal.hedged,
+          status: deal.status,
+          dealDate: deal.dealDate.toISOString().slice(0, 10),
+          notes: deal.notes,
+        })
+      }
+    } catch (emailErr) {
+      console.error('[email] Failed to send contract notification:', emailErr)
+    }
+
     return NextResponse.json(deal, { status: 201 })
   } catch (err) {
     console.error(err)

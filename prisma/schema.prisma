@@ -8,14 +8,22 @@ datasource db {
 }
 
 model User {
-  id           String   @id @default(cuid())
-  username     String   @unique
-  name         String?
-  passwordHash String
-  totpSecret   String?
-  totpEnabled  Boolean  @default(false)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  username              String   @unique
+  name                  String?
+  email                 String?  @unique
+  passwordHash          String
+  totpSecret            String?
+  totpEnabled           Boolean  @default(false)
+  isAdmin               Boolean  @default(false)
+  contractNotifications Boolean  @default(false)
+  inviteToken           String?  @unique
+  inviteExpires         DateTime?
+  mustSetPassword       Boolean  @default(false)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  contractAuditLogs ContractAuditLog[]
 }
 
 enum Commodity {
@@ -47,6 +55,10 @@ enum DealStatus {
   PENDING
   COMPLETED
   CANCELLED
+  COMPLETED_UNFILLED
+  COMPLETED_FILLED
+  SETTLED
+  DELETED
 }
 
 enum InterestLevel {
@@ -71,9 +83,20 @@ model Contact {
   notes             String?
   status            ContactStatus @default(LEAD)
   contactType       ContactType   @default(ORIGINATION)
+
+  // Origination commodity lists
   riceList          Boolean       @default(false)
   cornList          Boolean       @default(false)
   soybeanList       Boolean       @default(false)
+
+  // Sales commodity lists (Grain Customers)
+  riceRoughExport   Boolean       @default(false)
+  riceRoughDomestic Boolean       @default(false)
+  soybeansDomestic  Boolean       @default(false)
+  soybeansExport    Boolean       @default(false)
+  cornDomestic      Boolean       @default(false)
+  cornExport        Boolean       @default(false)
+
   riceAcres         Decimal?      @db.Decimal(10, 2)
   cornAcres         Decimal?      @db.Decimal(10, 2)
   soybeanAcres      Decimal?      @db.Decimal(10, 2)
@@ -130,8 +153,27 @@ model Deal {
   hedged         String?
   dealDate       DateTime   @default(now())
   notes          String?
+  deletedAt      DateTime?
+  dealType       String?
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
-  contact Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contact           Contact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
+  contractAuditLogs ContractAuditLog[]
+}
+
+model ContractAuditLog {
+  id             String   @id @default(cuid())
+  dealId         String
+  userId         String
+  action         String
+  fromStatus     String?
+  toStatus       String?
+  contractNumber String?
+  commodity      String?
+  contactName    String?
+  createdAt      DateTime @default(now())
+
+  deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id])
 }

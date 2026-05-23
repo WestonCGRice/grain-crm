@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Download } from 'lucide-react'
 
-type CommodityContact = {
+type Row = {
   id: string
   farmingEntityName: string | null
   firstName: string
@@ -11,16 +11,25 @@ type CommodityContact = {
   phone: string | null
 }
 
-type Tab = 'RICE' | 'CORN' | 'SOYBEAN'
+type ListKey =
+  | 'rice-rough-export'
+  | 'rice-rough-domestic'
+  | 'soybeans-domestic'
+  | 'soybeans-export'
+  | 'corn-domestic'
+  | 'corn-export'
 
-const TABS: { key: Tab; label: string; color: string }[] = [
-  { key: 'RICE', label: 'Rice List', color: '#0891b2' },
-  { key: 'CORN', label: 'Corn List', color: '#d97706' },
-  { key: 'SOYBEAN', label: 'Soybean List', color: '#65a30d' },
+const TABS: { key: ListKey; label: string }[] = [
+  { key: 'rice-rough-export',   label: 'Rice – Rough Export' },
+  { key: 'rice-rough-domestic', label: 'Rice – Rough Domestic' },
+  { key: 'soybeans-domestic',   label: 'Soybeans – Domestic' },
+  { key: 'soybeans-export',     label: 'Soybeans – Export' },
+  { key: 'corn-domestic',       label: 'Corn – Domestic' },
+  { key: 'corn-export',         label: 'Corn – Export' },
 ]
 
-function exportCSV(rows: CommodityContact[], commodity: Tab) {
-  const headers = ['Farm Name', 'Primary Contact First Name', 'Primary Contact Last Name', 'Phone']
+function exportCSV(rows: Row[], label: string) {
+  const headers = ['Customer Entity Name', 'First Name', 'Last Name', 'Phone']
   const lines = [
     headers.join(','),
     ...rows.map((r) =>
@@ -36,20 +45,20 @@ function exportCSV(rows: CommodityContact[], commodity: Tab) {
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
-  a.download = `${commodity.toLowerCase()}-list.csv`
+  a.download = `${label.toLowerCase().replace(/\s+/g, '-')}.csv`
   a.click()
   URL.revokeObjectURL(url)
 }
 
-export default function CommodityListPage() {
-  const [activeTab, setActiveTab] = useState<Tab>('RICE')
-  const [rows, setRows] = useState<CommodityContact[]>([])
+export default function SalesCommodityListPage() {
+  const [activeTab, setActiveTab] = useState<ListKey>('rice-rough-export')
+  const [rows, setRows] = useState<Row[]>([])
   const [loading, setLoading] = useState(true)
 
   const load = useCallback(async () => {
     setLoading(true)
     try {
-      const res = await fetch(`/api/commodity-list?commodity=${activeTab}`)
+      const res = await fetch(`/api/sales-commodity-list?list=${activeTab}`)
       const data = await res.json()
       setRows(data)
     } finally {
@@ -59,18 +68,18 @@ export default function CommodityListPage() {
 
   useEffect(() => { load() }, [load])
 
-  const activeTabMeta = TABS.find((t) => t.key === activeTab)!
+  const activeLabel = TABS.find((t) => t.key === activeTab)?.label ?? ''
 
   return (
     <div>
       <div className="page-header">
         <div>
-          <h1 className="page-title">Origination Commodity Lists</h1>
-          <p className="page-subtitle">Grain origination contacts opted in to price lists</p>
+          <h1 className="page-title">Sales Commodity Lists</h1>
+          <p className="page-subtitle">Grain customers opted in to sales commodity lists</p>
         </div>
         <button
           className="btn-secondary flex items-center gap-2"
-          onClick={() => exportCSV(rows, activeTab)}
+          onClick={() => exportCSV(rows, activeLabel)}
           disabled={rows.length === 0}
         >
           <Download size={15} />
@@ -78,25 +87,18 @@ export default function CommodityListPage() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 mb-5 border-b border-gray-200">
+      <div className="flex flex-wrap gap-1 mb-5 border-b border-gray-200">
         {TABS.map((tab) => (
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-5 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
               activeTab === tab.key
                 ? 'border-[#1d2c3f] text-[#1d2c3f]'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
             }`}
           >
-            <span className="flex items-center gap-2">
-              <span
-                className="w-2.5 h-2.5 rounded-full inline-block"
-                style={{ background: tab.color }}
-              />
-              {tab.label}
-            </span>
+            {tab.label}
           </button>
         ))}
       </div>
@@ -106,20 +108,20 @@ export default function CommodityListPage() {
           <div className="p-12 text-center text-gray-400">Loading…</div>
         ) : rows.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
-            No contacts on the {activeTabMeta.label} yet. Check the{' '}
-            <span className="font-medium">{activeTabMeta.label}</span> checkbox on a Grain Origination Contact to add them.
+            No customers on the <span className="font-medium">{activeLabel}</span> list yet.
+            Add them via the Sales Commodity Lists checkboxes on a Grain Customer.
           </div>
         ) : (
           <>
             <div className="px-4 py-2 border-b border-gray-100 bg-gray-50 text-xs text-gray-500">
-              {rows.length} contact{rows.length !== 1 ? 's' : ''} on {activeTabMeta.label}
+              {rows.length} customer{rows.length !== 1 ? 's' : ''} on {activeLabel}
             </div>
             <table>
               <thead>
                 <tr>
-                  <th>Farm Name</th>
-                  <th>Primary Contact First Name</th>
-                  <th>Primary Contact Last Name</th>
+                  <th>Customer Entity Name</th>
+                  <th>First Name</th>
+                  <th>Last Name</th>
                   <th>Phone</th>
                 </tr>
               </thead>
@@ -133,7 +135,7 @@ export default function CommodityListPage() {
                     <td>{r.lastName}</td>
                     <td>
                       {r.phone
-                        ? <a href={`tel:${r.phone}`} className="text-gray-700 hover:text-[#1d2c3f]">{r.phone}</a>
+                        ? <a href={`tel:${r.phone}`} className="hover:text-[#1d2c3f]">{r.phone}</a>
                         : <span className="text-gray-400">—</span>}
                     </td>
                   </tr>

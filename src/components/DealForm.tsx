@@ -33,8 +33,9 @@ type Props = {
 
 const STATUSES = [
   { value: 'PENDING', label: 'Target' },
-  { value: 'COMPLETED', label: 'Completed' },
-  { value: 'CANCELLED', label: 'Cancelled' },
+  { value: 'COMPLETED_UNFILLED', label: 'Completed – Unfilled' },
+  { value: 'COMPLETED_FILLED', label: 'Completed – Filled Not Settled' },
+  { value: 'SETTLED', label: 'Settled' },
 ]
 
 const FUTURES_MONTHS_BY_COMMODITY: Record<string, string[]> = {

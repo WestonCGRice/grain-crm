@@ -12,7 +12,7 @@ export async function GET(
       include: {
         commodityContacts: true,
         interactions: { orderBy: { date: 'desc' } },
-        deals: { orderBy: { dealDate: 'desc' } },
+        deals: { where: { deletedAt: null }, orderBy: { dealDate: 'desc' } },
       },
     })
     if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })
@@ -34,6 +34,7 @@ export async function PUT(
       farmingEntityName, firstName, lastName, email, phone, company, title,
       address, city, state, zip, notes, status, contactType,
       riceList, cornList, soybeanList,
+      riceRoughExport, riceRoughDomestic, soybeansDomestic, soybeansExport, cornDomestic, cornExport,
       riceAcres, cornAcres, soybeanAcres, riceEstYield, cornEstYield, soybeanEstYield,
     } = body
 
@@ -41,22 +42,18 @@ export async function PUT(
       where: { id },
       data: {
         farmingEntityName: farmingEntityName || null,
-        firstName,
-        lastName,
-        email: email || null,
-        phone: phone || null,
-        company: company || null,
-        title: title || null,
-        address: address || null,
-        city: city || null,
-        state: state || null,
-        zip: zip || null,
+        firstName, lastName,
+        email: email || null, phone: phone || null,
+        company: company || null, title: title || null,
+        address: address || null, city: city || null,
+        state: state || null, zip: zip || null,
         notes: notes || null,
         status,
         ...(contactType ? { contactType } : {}),
-        riceList: riceList ?? false,
-        cornList: cornList ?? false,
-        soybeanList: soybeanList ?? false,
+        riceList: riceList ?? false, cornList: cornList ?? false, soybeanList: soybeanList ?? false,
+        riceRoughExport: riceRoughExport ?? false, riceRoughDomestic: riceRoughDomestic ?? false,
+        soybeansDomestic: soybeansDomestic ?? false, soybeansExport: soybeansExport ?? false,
+        cornDomestic: cornDomestic ?? false, cornExport: cornExport ?? false,
         riceAcres: riceAcres ? parseFloat(riceAcres) : null,
         cornAcres: cornAcres ? parseFloat(cornAcres) : null,
         soybeanAcres: soybeanAcres ? parseFloat(soybeanAcres) : null,

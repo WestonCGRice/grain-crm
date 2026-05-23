@@ -18,9 +18,17 @@ type ContactFormData = {
   notes: string
   status: string
   contactType: string
+  // Origination lists
   riceList: boolean
   cornList: boolean
   soybeanList: boolean
+  // Sales lists (Grain Customers)
+  riceRoughExport: boolean
+  riceRoughDomestic: boolean
+  soybeansDomestic: boolean
+  soybeansExport: boolean
+  cornDomestic: boolean
+  cornExport: boolean
   riceAcres: string
   cornAcres: string
   soybeanAcres: string
@@ -48,6 +56,9 @@ function defaultForm(contactType: string): ContactFormData {
     notes: '', status: 'LEAD',
     contactType,
     riceList: false, cornList: false, soybeanList: false,
+    riceRoughExport: false, riceRoughDomestic: false,
+    soybeansDomestic: false, soybeansExport: false,
+    cornDomestic: false, cornExport: false,
     riceAcres: '', cornAcres: '', soybeanAcres: '',
     riceEstYield: '', cornEstYield: '', soybeanEstYield: '',
   }
@@ -89,7 +100,8 @@ export default function ContactForm({ initial, contactType: propContactType, onC
     setForm((f) => ({ ...f, [field]: value }))
   }
 
-  function toggle(field: 'riceList' | 'cornList' | 'soybeanList') {
+  type BoolField = 'riceList' | 'cornList' | 'soybeanList' | 'riceRoughExport' | 'riceRoughDomestic' | 'soybeansDomestic' | 'soybeansExport' | 'cornDomestic' | 'cornExport'
+  function toggle(field: BoolField) {
     setForm((f) => ({ ...f, [field]: !f[field] }))
   }
 
@@ -269,6 +281,32 @@ export default function ContactForm({ initial, contactType: propContactType, onC
                 </div>
               </div>
             </>
+          )}
+
+          {!isOrigination && (
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Sales Commodity Lists</p>
+              <div className="grid grid-cols-2 gap-2">
+                {([
+                  { field: 'riceRoughExport' as const, label: 'Rice – Rough Export' },
+                  { field: 'riceRoughDomestic' as const, label: 'Rice – Rough Domestic' },
+                  { field: 'soybeansDomestic' as const, label: 'Soybeans – Domestic' },
+                  { field: 'soybeansExport' as const, label: 'Soybeans – Export' },
+                  { field: 'cornDomestic' as const, label: 'Corn – Domestic' },
+                  { field: 'cornExport' as const, label: 'Corn – Export' },
+                ]).map(({ field, label }) => (
+                  <label key={field} className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={form[field]}
+                      onChange={() => toggle(field)}
+                      className="w-4 h-4 rounded"
+                    />
+                    <span className="text-sm text-gray-700">{label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           )}
 
           <div>

@@ -23,6 +23,9 @@ export const authConfig = {
         return isLoggedIn ? Response.redirect(new URL('/', nextUrl)) : true
       }
 
+      // Account setup page is public — invite token is the credential
+      if (pathname === '/setup-account') return true
+
       // Must be logged in for all other routes
       if (!isLoggedIn) return false
 
