@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
@@ -60,13 +59,11 @@ export default function Sidebar() {
     >
       {/* Logo */}
       <div className="px-4 py-4" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
-        <Image
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
           src="/central-grain-logo.png"
           alt="Central Grain"
-          width={192}
-          height={60}
-          className="w-full object-contain"
-          priority
+          className="w-full object-contain max-h-[60px]"
         />
       </div>
 
