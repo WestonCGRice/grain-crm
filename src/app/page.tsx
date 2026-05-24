@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { Users, TrendingUp, DollarSign, Wheat, BarChart3, ArrowRight } from 'lucide-react'
+import { Users, TrendingUp, Wheat, BarChart3, ArrowRight, ShoppingCart } from 'lucide-react'
 import { formatCurrency, formatDate } from '@/lib/utils'
 
 type ContactSummary = {
@@ -15,9 +15,10 @@ type DealSummary = {
   contact: { firstName: string; lastName: string }
 }
 type DashboardData = {
-  totalContacts: number
-  totalDeals: number
-  totalValue: number
+  totalOriginationContacts: number
+  totalSalesContacts: number
+  totalUnfilledPurchaseContracts: number
+  totalUnfilledSalesContracts: number
   contactsByStatus: { status: string; _count: { id: number } }[]
   dealsByCommodity: { commodity: string; _count: { id: number }; _sum: { totalValue: string | null } }[]
   recentContacts: ContactSummary[]
@@ -59,39 +60,66 @@ export default function DashboardPage() {
         <p className="page-subtitle">Welcome to GrainCRM — your grain merchandising platform</p>
       </div>
 
-      {/* KPI row */}
+      {/* KPI grid — 2 rows × 3 columns */}
       <div className="grid grid-cols-3 gap-5 mb-7">
-        <div className="stat-card border-l-4" style={{ borderColor: '#16a34a' }}>
+        {/* Row 1 */}
+        <div className="stat-card border-l-4" style={{ borderColor: '#1d2c3f' }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="stat-label">Total Contacts</span>
-            <div className="w-9 h-9 bg-green-100 rounded-lg flex items-center justify-center">
-              <Users size={18} className="text-green-600" />
+            <span className="stat-label">Total Grain Origination Contacts</span>
+            <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: '#e8edf2' }}>
+              <Users size={18} style={{ color: '#1d2c3f' }} />
             </div>
           </div>
-          <span className="stat-value">{data.totalContacts}</span>
-          <Link href="/contacts" className="text-xs text-green-600 hover:underline flex items-center gap-1 mt-1">
-            View all <ArrowRight size={11} />
-          </Link>
+          <span className="stat-value">{data.totalOriginationContacts}</span>
         </div>
 
         <div className="stat-card border-l-4" style={{ borderColor: '#d97706' }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="stat-label">Total Deals</span>
+            <span className="stat-label">Total Unfilled Purchase Contracts</span>
             <div className="w-9 h-9 bg-amber-100 rounded-lg flex items-center justify-center">
               <TrendingUp size={18} className="text-amber-600" />
             </div>
           </div>
-          <span className="stat-value">{data.totalDeals}</span>
+          <span className="stat-value">{data.totalUnfilledPurchaseContracts}</span>
         </div>
 
+        <div className="flex items-center justify-center">
+          <Link
+            href="/contacts"
+            className="btn-primary w-full text-center flex items-center justify-center gap-2 py-4 text-sm font-semibold"
+          >
+            <Users size={16} /> View Grain Origination Contacts
+          </Link>
+        </div>
+
+        {/* Row 2 */}
         <div className="stat-card border-l-4" style={{ borderColor: '#0891b2' }}>
           <div className="flex items-center justify-between mb-2">
-            <span className="stat-label">Total Deal Value</span>
+            <span className="stat-label">Total Grain Sales Contacts</span>
             <div className="w-9 h-9 bg-cyan-100 rounded-lg flex items-center justify-center">
-              <DollarSign size={18} className="text-cyan-600" />
+              <ShoppingCart size={18} className="text-cyan-600" />
             </div>
           </div>
-          <span className="stat-value text-2xl">{formatCurrency(data.totalValue)}</span>
+          <span className="stat-value">{data.totalSalesContacts}</span>
+        </div>
+
+        <div className="stat-card border-l-4" style={{ borderColor: '#65a30d' }}>
+          <div className="flex items-center justify-between mb-2">
+            <span className="stat-label">Total Unfilled Sales Contracts</span>
+            <div className="w-9 h-9 bg-lime-100 rounded-lg flex items-center justify-center">
+              <TrendingUp size={18} className="text-lime-600" />
+            </div>
+          </div>
+          <span className="stat-value">{data.totalUnfilledSalesContracts}</span>
+        </div>
+
+        <div className="flex items-center justify-center">
+          <Link
+            href="/grain-customers"
+            className="btn-primary w-full text-center flex items-center justify-center gap-2 py-4 text-sm font-semibold"
+          >
+            <ShoppingCart size={16} /> View Grain Sales Contacts
+          </Link>
         </div>
       </div>
 
