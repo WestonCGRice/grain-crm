@@ -58,7 +58,7 @@ export default function Sidebar() {
       style={{ background: 'var(--sidebar-bg)', borderRight: '1px solid var(--sidebar-border)' }}
     >
       {/* Logo */}
-      <div className="px-4 py-4" style={{ borderBottom: '1px solid var(--sidebar-border)' }}>
+      <div className="px-4 py-4" style={{ background: '#ffffff', borderBottom: '1px solid var(--sidebar-border)' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/central-grain-logo.png"
