@@ -2,7 +2,7 @@
 builder = "nixpacks"
 
 [deploy]
-startCommand = "npx prisma db push --accept-data-loss && npx tsx prisma/seed-admin.ts && next start -p ${PORT:-3000}"
+startCommand = "sh scripts/start.sh"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
