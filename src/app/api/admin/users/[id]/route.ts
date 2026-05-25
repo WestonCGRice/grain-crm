@@ -9,6 +9,35 @@ async function requireAdmin() {
   return session
 }
 
+// Full edit (name, email, role, contractNotifications)
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  if (!await requireAdmin()) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
+  const { id } = await params
+  const body = await req.json()
+  const { name, email, role, contractNotifications } = body
+
+  const user = await prisma.user.update({
+    where: { id },
+    data: {
+      ...(name !== undefined ? { name: name || null } : {}),
+      ...(email !== undefined ? { email: email || null } : {}),
+      ...(role !== undefined ? { role, isAdmin: role === 'ADMIN' } : {}),
+      ...(contractNotifications !== undefined ? { contractNotifications } : {}),
+    },
+    select: {
+      id: true, username: true, name: true, email: true,
+      role: true, isAdmin: true, contractNotifications: true, totpEnabled: true, mustSetPassword: true, createdAt: true,
+    },
+  })
+  return NextResponse.json(user)
+}
+
+// Toggle flags (legacy inline checkboxes — kept for compat)
 export async function PATCH(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -28,7 +57,7 @@ export async function PATCH(
     },
     select: {
       id: true, username: true, name: true, email: true,
-      isAdmin: true, contractNotifications: true, totpEnabled: true,
+      role: true, isAdmin: true, contractNotifications: true, totpEnabled: true, mustSetPassword: true, createdAt: true,
     },
   })
   return NextResponse.json(user)

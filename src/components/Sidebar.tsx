@@ -69,7 +69,7 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {/* Dashboard */}
-        <NavLink item={{ href: '/', label: 'Dashboard', icon: <Home size={15} /> }} />
+        <NavLink item={{ href: '/dashboard', label: 'Dashboard', icon: <Home size={15} />, matchPrefix: '/dashboard' }} />
 
         {/* Contacts */}
         <SectionLabel>Contacts</SectionLabel>
@@ -103,7 +103,7 @@ export default function Sidebar() {
       {/* Bottom actions */}
       <div className="px-3 py-3 space-y-1" style={{ borderTop: '1px solid var(--sidebar-border)' }}>
         {isAdmin && (
-          <NavLink item={{ href: '/admin', label: 'Administration', icon: <Settings size={15} />, matchPrefix: '/admin' }} />
+          <NavLink item={{ href: '/administration', label: 'Administration', icon: <Settings size={15} />, matchPrefix: '/administration' }} />
         )}
         <button
           onClick={() => signOut({ callbackUrl: '/login' })}

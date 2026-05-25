@@ -19,7 +19,7 @@ export async function GET() {
   const users = await prisma.user.findMany({
     select: {
       id: true, username: true, name: true, email: true,
-      isAdmin: true, contractNotifications: true,
+      role: true, isAdmin: true, contractNotifications: true,
       totpEnabled: true, mustSetPassword: true, createdAt: true,
     },
     orderBy: { createdAt: 'asc' },
@@ -33,12 +33,13 @@ export async function POST(req: NextRequest) {
   }
   try {
     const body = await req.json()
-    const { username, name, email, isAdmin, contractNotifications } = body
+    const { username, name, email, role, contractNotifications } = body
 
     if (!username || !email) {
       return NextResponse.json({ error: 'Username and email are required' }, { status: 400 })
     }
 
+    const resolvedRole = role ?? 'MERCHANDISER'
     const inviteToken = crypto.randomBytes(32).toString('hex')
     const inviteExpires = new Date(Date.now() + 72 * 60 * 60 * 1000)
     const tempHash = await bcrypt.hash(crypto.randomBytes(16).toString('hex'), 10)
@@ -49,7 +50,8 @@ export async function POST(req: NextRequest) {
         name: name || null,
         email,
         passwordHash: tempHash,
-        isAdmin: isAdmin ?? false,
+        role: resolvedRole,
+        isAdmin: resolvedRole === 'ADMIN',
         contractNotifications: contractNotifications ?? false,
         inviteToken,
         inviteExpires,

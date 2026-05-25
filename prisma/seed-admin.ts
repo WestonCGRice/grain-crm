@@ -19,6 +19,8 @@ async function main() {
       username: 'admin',
       name: 'Admin',
       passwordHash,
+      role: 'ADMIN',
+      isAdmin: true,
     },
   })
   console.log('✅ Admin user created.')

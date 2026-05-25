@@ -3,13 +3,16 @@
 import { usePathname } from 'next/navigation'
 import Sidebar from './Sidebar'
 
-const AUTH_PATHS = ['/login', '/setup-2fa']
+const FULL_SCREEN_PATHS = ['/login', '/setup-2fa', '/setup-account']
+const FULL_SCREEN_PREFIXES = ['/', '/scale-operations', '/operations-planning', '/administration']
 
 export default function LayoutShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isAuthPage = AUTH_PATHS.includes(pathname)
+  const isFullScreen =
+    FULL_SCREEN_PATHS.includes(pathname) ||
+    (pathname === '/' || FULL_SCREEN_PREFIXES.slice(1).some((p) => pathname.startsWith(p)))
 
-  if (isAuthPage) {
+  if (isFullScreen) {
     return <>{children}</>
   }
 

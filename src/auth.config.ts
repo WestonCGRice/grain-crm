@@ -20,7 +20,8 @@ export const authConfig = {
 
       // Login page: redirect logged-in users away, allow others
       if (pathname === '/login') {
-        return isLoggedIn ? Response.redirect(new URL('/', nextUrl)) : true
+        if (isLoggedIn) return Response.redirect(new URL('/', nextUrl))
+        return true
       }
 
       // Account setup page is public — invite token is the credential
@@ -37,6 +38,23 @@ export const authConfig = {
       // Logged in without TOTP → force to setup
       if (!totpEnabled) {
         return Response.redirect(new URL('/setup-2fa', nextUrl))
+      }
+
+      const role = (auth?.user as unknown as { role?: string })?.role ?? 'MERCHANDISER'
+
+      // Administration routes: Admin only
+      if (pathname.startsWith('/administration') || pathname.startsWith('/admin')) {
+        return role === 'ADMIN' ? true : Response.redirect(new URL('/', nextUrl))
+      }
+
+      // Hub and module pages: any authenticated role
+      if (pathname === '/' || pathname.startsWith('/scale-operations') || pathname.startsWith('/operations-planning')) {
+        return true
+      }
+
+      // All other routes (Merchandising CRM): Merchandiser or Admin only
+      if (role === 'SCALE_OPERATIONS') {
+        return Response.redirect(new URL('/scale-operations', nextUrl))
       }
 
       return true

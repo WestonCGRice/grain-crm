@@ -39,7 +39,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             id: user.id,
             name: user.name ?? user.username,
             totpEnabled: user.totpEnabled,
-            isAdmin: user.isAdmin,
+            role: user.role,
+            isAdmin: user.role === 'ADMIN',
           }
         } catch (err) {
           console.error('[authorize] Error:', err)
@@ -54,14 +55,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (user) {
         token.id = user.id
         token.totpEnabled = (user as unknown as { totpEnabled?: boolean }).totpEnabled ?? false
-        token.isAdmin = (user as unknown as { isAdmin?: boolean }).isAdmin ?? false
+        token.role = (user as unknown as { role?: string }).role ?? 'MERCHANDISER'
+        token.isAdmin = token.role === 'ADMIN'
       }
       return token
     },
     session({ session, token }) {
       if (token.id) session.user.id = token.id as string
       ;(session.user as unknown as { totpEnabled: boolean }).totpEnabled = (token.totpEnabled as boolean) ?? false
-      ;(session.user as unknown as { isAdmin: boolean }).isAdmin = (token.isAdmin as boolean) ?? false
+      ;(session.user as unknown as { role: string }).role = (token.role as string) ?? 'MERCHANDISER'
+      ;(session.user as unknown as { isAdmin: boolean }).isAdmin = token.role === 'ADMIN'
       return session
     },
   },
