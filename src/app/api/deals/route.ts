@@ -59,7 +59,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const {
       contactId, commodity, quantity, pricePerBushel, basis,
-      cropYear, futuresMonth, futuresYear, hedged,
+      cropYear, futuresMonth, futuresYear, orderEntered, hedged,
       status, dealDate, notes, dealType,
     } = body
 
@@ -83,7 +83,8 @@ export async function POST(req: NextRequest) {
         status: status ?? 'PENDING',
         contractNumber,
         cropYear: cropYear || null, futuresMonth: futuresMonth || null,
-        futuresYear: futuresYear || null, hedged: hedged || null,
+        futuresYear: futuresYear || null, orderEntered: orderEntered || null,
+        hedged: hedged || null,
         dealDate: dealDate ? new Date(dealDate) : new Date(),
         notes: notes || null,
         dealType: dealType || null,

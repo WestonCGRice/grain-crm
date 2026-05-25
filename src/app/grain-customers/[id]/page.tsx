@@ -31,6 +31,7 @@ type Deal = {
   cropYear: string | null
   futuresMonth: string | null
   futuresYear: string | null
+  orderEntered: string | null
   hedged: string | null
   dealDate: string
   updatedAt: string
@@ -313,8 +314,8 @@ export default function GrainCustomerDetailPage() {
                                     pricePerBushel: d.pricePerBushel, basis: d.basis,
                                     status: d.status, contractNumber: d.contractNumber,
                                     cropYear: d.cropYear, futuresMonth: d.futuresMonth,
-                                    futuresYear: d.futuresYear, hedged: d.hedged,
-                                    dealDate: d.dealDate, notes: d.notes,
+                                    futuresYear: d.futuresYear, orderEntered: d.orderEntered,
+                                    hedged: d.hedged, dealDate: d.dealDate, notes: d.notes,
                                   })
                                   setShowDeal(true)
                                 }}

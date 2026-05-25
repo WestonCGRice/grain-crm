@@ -16,6 +16,7 @@ export type DealInitial = {
   cropYear: string | null
   futuresMonth: string | null
   futuresYear: string | null
+  orderEntered: string | null
   hedged: string | null
   dealDate: string
   notes: string | null
@@ -74,6 +75,7 @@ export default function DealForm({
   const [cropYear, setCropYear] = useState(initial?.cropYear ?? '')
   const [futuresMonth, setFuturesMonth] = useState(initial?.futuresMonth ?? '')
   const [futuresYear, setFuturesYear] = useState(initial?.futuresYear ?? '')
+  const [orderEntered, setOrderEntered] = useState(initial?.orderEntered ?? '')
   const [hedged, setHedged] = useState(initial?.hedged ?? '')
   const [status, setStatus] = useState(initial?.status ?? 'PENDING')
   const [dealDate, setDealDate] = useState(
@@ -135,6 +137,7 @@ export default function DealForm({
           cropYear: cropYear || null,
           futuresMonth: futuresMonth || null,
           futuresYear: futuresYear || null,
+          orderEntered: orderEntered || null,
           hedged: hedged || null,
           status,
           dealDate,
@@ -295,6 +298,15 @@ export default function DealForm({
           <div className="p-3 bg-green-50 rounded-lg text-sm flex items-center justify-between">
             <span className="text-green-700 font-medium">Total Value:</span>
             <span className="text-green-900 font-bold">{totalDisplay}</span>
+          </div>
+
+          <div>
+            <label className="form-label">Order Entered</label>
+            <select className="form-input" value={orderEntered} onChange={(e) => setOrderEntered(e.target.value)}>
+              <option value="">— Select —</option>
+              <option value="Yes">Yes</option>
+              <option value="No">No</option>
+            </select>
           </div>
 
           <div>

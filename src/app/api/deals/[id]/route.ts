@@ -30,7 +30,7 @@ export async function PUT(
     const body = await req.json()
     const {
       quantity, pricePerBushel, basis,
-      cropYear, futuresMonth, futuresYear, hedged,
+      cropYear, futuresMonth, futuresYear, orderEntered, hedged,
       status, dealDate, notes, dealType,
     } = body
 
@@ -58,7 +58,8 @@ export async function PUT(
         quantity: qty, pricePerBushel: futuresPrice, basis: basisVal,
         totalValue: total, status, contractNumber,
         cropYear: cropYear || null, futuresMonth: futuresMonth || null,
-        futuresYear: futuresYear || null, hedged: hedged || null,
+        futuresYear: futuresYear || null, orderEntered: orderEntered || null,
+        hedged: hedged || null,
         dealDate: dealDate ? new Date(dealDate) : undefined,
         notes: notes || null,
       },

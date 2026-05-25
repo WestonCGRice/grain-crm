@@ -150,6 +150,7 @@ model Deal {
   cropYear       String?
   futuresMonth   String?
   futuresYear    String?
+  orderEntered   String?
   hedged         String?
   dealDate       DateTime   @default(now())
   notes          String?
