@@ -88,7 +88,7 @@ export default function FuturesContractListPage() {
           <div className="p-12 text-center text-gray-400">Loading…</div>
         ) : contracts.length === 0 ? (
           <div className="p-12 text-center text-gray-400">
-            No futures contracts found. They are created automatically when a sales contract is saved with Transaction Hedged = Yes.
+            No futures contracts found. They are created automatically when a purchase or sales contract is saved with Transaction Hedged = Yes.
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -96,12 +96,13 @@ export default function FuturesContractListPage() {
               <thead>
                 <tr>
                   <th>Commodity</th>
+                  <th>Type</th>
                   <th>Futures Month</th>
                   <th>Futures Year</th>
                   <th>Futures Price</th>
                   <th>Quantity</th>
                   <th># of Contracts</th>
-                  <th>Linked Sales Contract #</th>
+                  <th>Linked Contract #</th>
                   <th>Contact</th>
                 </tr>
               </thead>
@@ -117,6 +118,7 @@ export default function FuturesContractListPage() {
                         {fc.commodity.charAt(0) + fc.commodity.slice(1).toLowerCase()}
                       </span>
                     </td>
+                    <td className="text-xs text-gray-600">{fc.deal.dealType === 'SALE' ? 'Sell' : 'Purchase'}</td>
                     <td className="font-medium">{fc.futuresMonth}</td>
                     <td className="font-medium">{fc.futuresYear}</td>
                     <td>{formatCurrency(fc.futuresPrice)}/{unit(fc.commodity)}</td>

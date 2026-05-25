@@ -21,7 +21,6 @@ type DealForFutures = {
 
 export async function upsertFuturesContract(deal: DealForFutures) {
   const isHedgedSale =
-    deal.dealType === 'SALE' &&
     deal.hedged === 'Yes' &&
     !deal.deletedAt &&
     deal.futuresMonth &&
