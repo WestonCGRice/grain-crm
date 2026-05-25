@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import { sendContractNotificationEmail } from '@/lib/email'
+import { upsertFuturesContract } from '@/lib/futures'
 
 async function generateContractNumber(dealType: 'PURCHASE' | 'SALE'): Promise<string> {
   const prefix = dealType === 'PURCHASE' ? '1' : '9'
@@ -104,6 +105,9 @@ export async function POST(req: NextRequest) {
         },
       })
     }
+
+    // Auto-create/update futures contract for hedged sales
+    await upsertFuturesContract(deal)
 
     // Contract notification emails
     try {

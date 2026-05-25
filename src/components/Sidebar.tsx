@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useSession } from 'next-auth/react'
 import {
   Users, BarChart3, Home, LogOut, ShoppingCart,
-  List, Target, CheckCircle,
+  List, Target, CheckCircle, TrendingUp,
   Trash2, Settings, ChevronRight,
 } from 'lucide-react'
 import { signOut } from 'next-auth/react'
@@ -91,6 +91,7 @@ export default function Sidebar() {
         <NavLink item={{ href: '/contracts/completed-filled', label: 'Completed - Filled / Unsettled', icon: <ChevronRight size={15} />, matchPrefix: '/contracts/completed-filled' }} />
         <NavLink item={{ href: '/contracts/settled', label: 'Settled Contracts', icon: <CheckCircle size={15} />, matchPrefix: '/contracts/settled' }} />
         <NavLink item={{ href: '/contracts/deleted', label: 'Deleted Contracts', icon: <Trash2 size={15} />, matchPrefix: '/contracts/deleted' }} />
+        <NavLink item={{ href: '/futures-contracts', label: 'Futures Contract List', icon: <TrendingUp size={15} />, matchPrefix: '/futures-contracts' }} />
 
         {/* Analytics */}
         <SectionLabel>Analytics</SectionLabel>

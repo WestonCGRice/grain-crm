@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
+import { upsertFuturesContract } from '@/lib/futures'
 
 async function generateContractNumber(dealType: 'PURCHASE' | 'SALE'): Promise<string> {
   const prefix = dealType === 'PURCHASE' ? '1' : '9'
@@ -63,6 +64,9 @@ export async function PUT(
       },
       include: { contact: true },
     })
+
+    // Auto-create/update/delete futures contract for hedged sales
+    await upsertFuturesContract(deal)
 
     // Audit log when status changes
     if (userId && current.status !== status) {
