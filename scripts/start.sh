@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e
 
+echo "[start] Cleaning up any orphaned database types..."
+echo 'DROP TYPE IF EXISTS "UserRole";' | ./node_modules/.bin/prisma db execute --stdin || true
+
 echo "[start] Running database schema push..."
 ./node_modules/.bin/prisma db push --accept-data-loss
 
