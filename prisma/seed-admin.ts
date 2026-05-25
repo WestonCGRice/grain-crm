@@ -9,7 +9,16 @@ const prisma = new PrismaClient({ adapter })
 async function main() {
   const existing = await prisma.user.findUnique({ where: { username: 'admin' } })
   if (existing) {
-    console.log('Admin user already exists — skipping.')
+    // Ensure role and isAdmin are correct even for pre-existing admin accounts
+    if (existing.role !== 'ADMIN' || !existing.isAdmin) {
+      await prisma.user.update({
+        where: { username: 'admin' },
+        data: { role: 'ADMIN', isAdmin: true },
+      })
+      console.log('✅ Admin user role updated to ADMIN.')
+    } else {
+      console.log('Admin user already exists and is correctly configured — skipping.')
+    }
     return
   }
 
