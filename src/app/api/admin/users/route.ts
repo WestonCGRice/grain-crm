@@ -21,6 +21,8 @@ export async function GET() {
       id: true, username: true, name: true, email: true,
       role: true, isAdmin: true, contractNotifications: true,
       totpEnabled: true, mustSetPassword: true, createdAt: true,
+      accessMerchandising: true, accessAdministration: true,
+      accessScaleOperations: true, accessOperationsPlanning: true,
     },
     orderBy: { createdAt: 'asc' },
   })
@@ -33,7 +35,10 @@ export async function POST(req: NextRequest) {
   }
   try {
     const body = await req.json()
-    const { username, name, email, role, contractNotifications } = body
+    const {
+      username, name, email, role, contractNotifications,
+      accessMerchandising, accessAdministration, accessScaleOperations, accessOperationsPlanning,
+    } = body
 
     if (!username || !email) {
       return NextResponse.json({ error: 'Username and email are required' }, { status: 400 })
@@ -53,6 +58,10 @@ export async function POST(req: NextRequest) {
         role: resolvedRole,
         isAdmin: resolvedRole === 'ADMIN',
         contractNotifications: contractNotifications ?? false,
+        accessMerchandising: accessMerchandising ?? true,
+        accessAdministration: accessAdministration ?? false,
+        accessScaleOperations: accessScaleOperations ?? false,
+        accessOperationsPlanning: accessOperationsPlanning ?? false,
         inviteToken,
         inviteExpires,
         mustSetPassword: true,

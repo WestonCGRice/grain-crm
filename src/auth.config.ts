@@ -40,21 +40,40 @@ export const authConfig = {
         return Response.redirect(new URL('/setup-2fa', nextUrl))
       }
 
-      const role = (auth?.user as unknown as { role?: string })?.role ?? 'MERCHANDISER'
+      const u = auth?.user as unknown as {
+        role?: string; isAdmin?: boolean
+        accessMerchandising?: boolean; accessAdministration?: boolean
+        accessScaleOperations?: boolean; accessOperationsPlanning?: boolean
+      }
+      const isAdmin = u?.role === 'ADMIN'
+      const access = {
+        merchandising: isAdmin || (u?.accessMerchandising ?? true),
+        administration: isAdmin || (u?.accessAdministration ?? false),
+        scaleOperations: isAdmin || (u?.accessScaleOperations ?? false),
+        operationsPlanning: isAdmin || (u?.accessOperationsPlanning ?? false),
+      }
 
-      // Administration routes: Admin only
+      // Hub page — always allowed when logged in
+      if (pathname === '/') return true
+
+      // Administration routes
       if (pathname.startsWith('/administration') || pathname.startsWith('/admin')) {
-        return role === 'ADMIN' ? true : Response.redirect(new URL('/', nextUrl))
+        return access.administration ? true : Response.redirect(new URL('/', nextUrl))
       }
 
-      // Hub and module pages: any authenticated role
-      if (pathname === '/' || pathname.startsWith('/scale-operations') || pathname.startsWith('/operations-planning')) {
-        return true
+      // Scale operations
+      if (pathname.startsWith('/scale-operations')) {
+        return access.scaleOperations ? true : Response.redirect(new URL('/', nextUrl))
       }
 
-      // All other routes (Merchandising CRM): Merchandiser or Admin only
-      if (role === 'SCALE_OPERATIONS') {
-        return Response.redirect(new URL('/scale-operations', nextUrl))
+      // Operations planning
+      if (pathname.startsWith('/operations-planning')) {
+        return access.operationsPlanning ? true : Response.redirect(new URL('/', nextUrl))
+      }
+
+      // All other routes (Merchandising CRM)
+      if (!access.merchandising) {
+        return Response.redirect(new URL('/', nextUrl))
       }
 
       return true

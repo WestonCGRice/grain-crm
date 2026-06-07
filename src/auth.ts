@@ -41,6 +41,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             totpEnabled: user.totpEnabled,
             role: user.role,
             isAdmin: user.role === 'ADMIN',
+            accessMerchandising: user.accessMerchandising,
+            accessAdministration: user.accessAdministration,
+            accessScaleOperations: user.accessScaleOperations,
+            accessOperationsPlanning: user.accessOperationsPlanning,
           }
         } catch (err) {
           console.error('[authorize] Error:', err)
@@ -53,18 +57,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     ...authConfig.callbacks,
     jwt({ token, user }) {
       if (user) {
+        const u = user as unknown as {
+          totpEnabled?: boolean; role?: string
+          accessMerchandising?: boolean; accessAdministration?: boolean
+          accessScaleOperations?: boolean; accessOperationsPlanning?: boolean
+        }
         token.id = user.id
-        token.totpEnabled = (user as unknown as { totpEnabled?: boolean }).totpEnabled ?? false
-        token.role = (user as unknown as { role?: string }).role ?? 'MERCHANDISER'
+        token.totpEnabled = u.totpEnabled ?? false
+        token.role = u.role ?? 'MERCHANDISER'
         token.isAdmin = token.role === 'ADMIN'
+        token.accessMerchandising = u.accessMerchandising ?? true
+        token.accessAdministration = u.accessAdministration ?? false
+        token.accessScaleOperations = u.accessScaleOperations ?? false
+        token.accessOperationsPlanning = u.accessOperationsPlanning ?? false
       }
       return token
     },
     session({ session, token }) {
       if (token.id) session.user.id = token.id as string
-      ;(session.user as unknown as { totpEnabled: boolean }).totpEnabled = (token.totpEnabled as boolean) ?? false
-      ;(session.user as unknown as { role: string }).role = (token.role as string) ?? 'MERCHANDISER'
-      ;(session.user as unknown as { isAdmin: boolean }).isAdmin = token.role === 'ADMIN'
+      const u = session.user as unknown as Record<string, unknown>
+      u.totpEnabled = (token.totpEnabled as boolean) ?? false
+      u.role = (token.role as string) ?? 'MERCHANDISER'
+      u.isAdmin = token.role === 'ADMIN'
+      u.accessMerchandising = (token.accessMerchandising as boolean) ?? true
+      u.accessAdministration = (token.accessAdministration as boolean) ?? false
+      u.accessScaleOperations = (token.accessScaleOperations as boolean) ?? false
+      u.accessOperationsPlanning = (token.accessOperationsPlanning as boolean) ?? false
       return session
     },
   },

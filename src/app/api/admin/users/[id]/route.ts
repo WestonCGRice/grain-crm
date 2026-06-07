@@ -19,7 +19,10 @@ export async function PUT(
   }
   const { id } = await params
   const body = await req.json()
-  const { name, email, role, contractNotifications } = body
+  const {
+    name, email, role, contractNotifications,
+    accessMerchandising, accessAdministration, accessScaleOperations, accessOperationsPlanning,
+  } = body
 
   const user = await prisma.user.update({
     where: { id },
@@ -28,10 +31,16 @@ export async function PUT(
       ...(email !== undefined ? { email: email || null } : {}),
       ...(role !== undefined ? { role, isAdmin: role === 'ADMIN' } : {}),
       ...(contractNotifications !== undefined ? { contractNotifications } : {}),
+      ...(accessMerchandising !== undefined ? { accessMerchandising } : {}),
+      ...(accessAdministration !== undefined ? { accessAdministration } : {}),
+      ...(accessScaleOperations !== undefined ? { accessScaleOperations } : {}),
+      ...(accessOperationsPlanning !== undefined ? { accessOperationsPlanning } : {}),
     },
     select: {
       id: true, username: true, name: true, email: true,
       role: true, isAdmin: true, contractNotifications: true, totpEnabled: true, mustSetPassword: true, createdAt: true,
+      accessMerchandising: true, accessAdministration: true,
+      accessScaleOperations: true, accessOperationsPlanning: true,
     },
   })
   return NextResponse.json(user)
@@ -47,17 +56,26 @@ export async function PATCH(
   }
   const { id } = await params
   const body = await req.json()
-  const { isAdmin, contractNotifications } = body
+  const {
+    isAdmin, contractNotifications,
+    accessMerchandising, accessAdministration, accessScaleOperations, accessOperationsPlanning,
+  } = body
 
   const user = await prisma.user.update({
     where: { id },
     data: {
       ...(isAdmin !== undefined ? { isAdmin } : {}),
       ...(contractNotifications !== undefined ? { contractNotifications } : {}),
+      ...(accessMerchandising !== undefined ? { accessMerchandising } : {}),
+      ...(accessAdministration !== undefined ? { accessAdministration } : {}),
+      ...(accessScaleOperations !== undefined ? { accessScaleOperations } : {}),
+      ...(accessOperationsPlanning !== undefined ? { accessOperationsPlanning } : {}),
     },
     select: {
       id: true, username: true, name: true, email: true,
       role: true, isAdmin: true, contractNotifications: true, totpEnabled: true, mustSetPassword: true, createdAt: true,
+      accessMerchandising: true, accessAdministration: true,
+      accessScaleOperations: true, accessOperationsPlanning: true,
     },
   })
   return NextResponse.json(user)

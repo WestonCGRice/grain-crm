@@ -17,19 +17,23 @@ type User = {
   totpEnabled: boolean
   mustSetPassword: boolean
   createdAt: string
+  accessMerchandising: boolean
+  accessAdministration: boolean
+  accessScaleOperations: boolean
+  accessOperationsPlanning: boolean
 }
 
 const ROLES = [
-  { value: 'SCALE_OPERATIONS', label: 'Scale Operations' },
-  { value: 'MERCHANDISER', label: 'Merchandiser' },
+  { value: 'MERCHANDISER', label: 'Standard User' },
   { value: 'ADMIN', label: 'Admin' },
 ]
 
-const ROLE_BADGE: Record<string, string> = {
-  SCALE_OPERATIONS: 'badge badge-yellow',
-  MERCHANDISER: 'badge badge-blue',
-  ADMIN: 'badge badge-navy',
-}
+const MODULES: { key: keyof Pick<User, 'accessMerchandising' | 'accessAdministration' | 'accessScaleOperations' | 'accessOperationsPlanning'>; label: string }[] = [
+  { key: 'accessMerchandising',      label: 'Merchandising' },
+  { key: 'accessAdministration',     label: 'Administration' },
+  { key: 'accessScaleOperations',    label: 'Scale Operations' },
+  { key: 'accessOperationsPlanning', label: 'Operations Planning' },
+]
 
 export default function AdministrationPage() {
   const { data: session } = useSession()
@@ -48,8 +52,14 @@ export default function AdministrationPage() {
   const [newEmail, setNewEmail] = useState('')
   const [newRole, setNewRole] = useState('MERCHANDISER')
   const [newNotify, setNewNotify] = useState(false)
+  const [newAccess, setNewAccess] = useState({
+    accessMerchandising: true,
+    accessAdministration: false,
+    accessScaleOperations: false,
+    accessOperationsPlanning: false,
+  })
 
-  // Edit modal
+  // Edit modal (name / email / role / notifications only)
   const [editUser, setEditUser] = useState<User | null>(null)
   const [editName, setEditName] = useState('')
   const [editEmail, setEditEmail] = useState('')
@@ -77,12 +87,16 @@ export default function AdministrationPage() {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: newUsername, name: newName, email: newEmail, role: newRole, contractNotifications: newNotify }),
+        body: JSON.stringify({
+          username: newUsername, name: newName, email: newEmail,
+          role: newRole, contractNotifications: newNotify, ...newAccess,
+        }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to create user')
       setShowCreate(false)
       setNewUsername(''); setNewName(''); setNewEmail(''); setNewRole('MERCHANDISER'); setNewNotify(false)
+      setNewAccess({ accessMerchandising: true, accessAdministration: false, accessScaleOperations: false, accessOperationsPlanning: false })
       loadUsers()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
@@ -95,7 +109,7 @@ export default function AdministrationPage() {
     setEditUser(u)
     setEditName(u.name ?? '')
     setEditEmail(u.email ?? '')
-    setEditRole(u.role)
+    setEditRole(u.role === 'ADMIN' ? 'ADMIN' : 'MERCHANDISER')
     setEditNotify(u.contractNotifications)
     setError('')
   }
@@ -122,6 +136,16 @@ export default function AdministrationPage() {
     }
   }
 
+  async function toggleAccess(userId: string, field: string, value: boolean) {
+    // Optimistic update
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: value } : u))
+    await fetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ [field]: value }),
+    })
+  }
+
   async function handleDelete(user: User) {
     if (!confirm(`Delete user "${user.username}"? This cannot be undone.`)) return
     await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE' })
@@ -132,7 +156,6 @@ export default function AdministrationPage() {
 
   return (
     <div className="min-h-screen flex flex-col" style={{ background: '#f0f4f8' }}>
-      {/* Header */}
       <header className="flex items-center justify-between px-8 py-5" style={{ background: '#1d2c3f' }}>
         <div className="flex items-center gap-4">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -147,11 +170,11 @@ export default function AdministrationPage() {
         </button>
       </header>
 
-      <main className="flex-1 max-w-6xl mx-auto w-full px-6 py-8">
+      <main className="flex-1 w-full px-6 py-8" style={{ maxWidth: 1400, margin: '0 auto' }}>
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h2 className="text-xl font-bold text-gray-900">Master User List</h2>
-            <p className="text-sm text-gray-500 mt-0.5">{users.length} user{users.length !== 1 ? 's' : ''}</p>
+            <h2 className="text-xl font-bold text-gray-900">User Access Management</h2>
+            <p className="text-sm text-gray-500 mt-0.5">{users.length} user{users.length !== 1 ? 's' : ''} — check boxes control which modules each user can access</p>
           </div>
           <button className="btn-primary flex items-center gap-2" onClick={() => { setShowCreate(true); setError('') }}>
             <Plus size={15} /> Add User
@@ -170,66 +193,88 @@ export default function AdministrationPage() {
                   <th>Username</th>
                   <th>Name</th>
                   <th>Email</th>
-                  <th>Role</th>
-                  <th>Contract Notifications</th>
+                  <th className="text-center">Merchandising</th>
+                  <th className="text-center">Administration</th>
+                  <th className="text-center">Scale Operations</th>
+                  <th className="text-center">Operations Planning</th>
+                  <th>Notifications</th>
                   <th>2FA</th>
-                  <th>Account Status</th>
+                  <th>Status</th>
                   <th>Created</th>
-                  <th style={{ width: 80 }}></th>
+                  <th style={{ width: 60 }}></th>
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
-                  <tr key={u.id}>
-                    <td className="font-mono text-sm font-medium text-gray-800">{u.username}</td>
-                    <td>{u.name || <span className="text-gray-400">—</span>}</td>
-                    <td className="text-sm text-gray-600">{u.email || <span className="text-gray-400">—</span>}</td>
-                    <td>
-                      <span className={ROLE_BADGE[u.role] ?? 'badge badge-gray'}>
-                        {ROLES.find((r) => r.value === u.role)?.label ?? u.role}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${u.contractNotifications ? 'badge-green' : 'badge-gray'}`}>
-                        {u.contractNotifications ? 'Yes' : 'No'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${u.totpEnabled ? 'badge-green' : 'badge-yellow'}`}>
-                        {u.totpEnabled ? 'Enabled' : 'Pending'}
-                      </span>
-                    </td>
-                    <td>
-                      <span className={`badge ${u.mustSetPassword ? 'badge-yellow' : 'badge-green'}`}>
-                        {u.mustSetPassword ? 'Invite Pending' : 'Active'}
-                      </span>
-                    </td>
-                    <td className="text-xs text-gray-500">{formatDate(u.createdAt)}</td>
-                    <td>
-                      <div className="flex items-center gap-2">
-                        <button
-                          className="text-gray-300 hover:text-[#1d2c3f]"
-                          onClick={() => openEdit(u)}
-                          title="Edit user"
-                        >
-                          <Pencil size={13} />
-                        </button>
-                        <button
-                          className="text-gray-300 hover:text-red-500"
-                          onClick={() => handleDelete(u)}
-                          disabled={u.id === session?.user?.id}
-                          title={u.id === session?.user?.id ? 'Cannot delete your own account' : 'Delete user'}
-                        >
-                          <Trash2 size={13} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                {users.map((u) => {
+                  const isUserAdmin = u.role === 'ADMIN'
+                  return (
+                    <tr key={u.id}>
+                      <td className="font-mono text-sm font-medium text-gray-800">
+                        {u.username}
+                        {isUserAdmin && (
+                          <span className="ml-2 badge badge-navy text-xs">Admin</span>
+                        )}
+                      </td>
+                      <td>{u.name || <span className="text-gray-400">—</span>}</td>
+                      <td className="text-sm text-gray-600">{u.email || <span className="text-gray-400">—</span>}</td>
+                      {MODULES.map((mod) => (
+                        <td key={mod.key} className="text-center">
+                          <input
+                            type="checkbox"
+                            checked={isUserAdmin || u[mod.key]}
+                            disabled={isUserAdmin || u.id === session?.user?.id}
+                            onChange={(e) => toggleAccess(u.id, mod.key, e.target.checked)}
+                            className="w-4 h-4 accent-green-600 cursor-pointer disabled:cursor-default"
+                            title={isUserAdmin ? 'Admins always have full access' : mod.label}
+                          />
+                        </td>
+                      ))}
+                      <td>
+                        <span className={`badge ${u.contractNotifications ? 'badge-green' : 'badge-gray'}`}>
+                          {u.contractNotifications ? 'On' : 'Off'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${u.totpEnabled ? 'badge-green' : 'badge-yellow'}`}>
+                          {u.totpEnabled ? 'Enabled' : 'Pending'}
+                        </span>
+                      </td>
+                      <td>
+                        <span className={`badge ${u.mustSetPassword ? 'badge-yellow' : 'badge-green'}`}>
+                          {u.mustSetPassword ? 'Invite Pending' : 'Active'}
+                        </span>
+                      </td>
+                      <td className="text-xs text-gray-500">{formatDate(u.createdAt)}</td>
+                      <td>
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="text-gray-300 hover:text-[#1d2c3f]"
+                            onClick={() => openEdit(u)}
+                            title="Edit user"
+                          >
+                            <Pencil size={13} />
+                          </button>
+                          <button
+                            className="text-gray-300 hover:text-red-500"
+                            onClick={() => handleDelete(u)}
+                            disabled={u.id === session?.user?.id}
+                            title={u.id === session?.user?.id ? 'Cannot delete your own account' : 'Delete user'}
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           )}
         </div>
+
+        <p className="mt-3 text-xs text-gray-400">
+          * Access changes take effect the next time the user logs in. Admin users always have full access to all modules.
+        </p>
       </main>
 
       {/* Create user modal */}
@@ -261,6 +306,24 @@ export default function AdministrationPage() {
                   {ROLES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
                 </select>
               </div>
+              {newRole !== 'ADMIN' && (
+                <div>
+                  <label className="form-label">Module Access</label>
+                  <div className="space-y-2 mt-1">
+                    {MODULES.map((mod) => (
+                      <label key={mod.key} className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={newAccess[mod.key]}
+                          onChange={(e) => setNewAccess(prev => ({ ...prev, [mod.key]: e.target.checked }))}
+                          className="w-4 h-4 accent-green-600"
+                        />
+                        <span className="text-sm text-gray-700">{mod.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
               <label className="flex items-center gap-2 cursor-pointer pt-1">
                 <input type="checkbox" checked={newNotify} onChange={(e) => setNewNotify(e.target.checked)} className="w-4 h-4" />
                 <span className="text-sm font-medium text-gray-700 flex items-center gap-1"><Bell size={13} /> Contract Notifications</span>
@@ -274,7 +337,7 @@ export default function AdministrationPage() {
         </div>
       )}
 
-      {/* Edit user modal */}
+      {/* Edit user modal (name / email / role / notifications) */}
       {editUser && (
         <div className="modal-overlay" onClick={() => setEditUser(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -316,7 +379,6 @@ export default function AdministrationPage() {
         </div>
       )}
 
-      {/* Admin sidebar hint */}
       <div className="fixed bottom-6 right-6">
         <button
           onClick={() => router.push('/dashboard')}

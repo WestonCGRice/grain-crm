@@ -11,7 +11,7 @@ type Tile = {
   description: string
   icon: React.ReactNode
   href: string
-  roles: string[]
+  accessKey: string
   color: string
 }
 
@@ -22,7 +22,7 @@ const TILES: Tile[] = [
     description: 'Manage incoming and outgoing grain scale tickets',
     icon: <Scale size={36} />,
     href: '/scale-operations',
-    roles: ['SCALE_OPERATIONS', 'MERCHANDISER', 'ADMIN'],
+    accessKey: 'accessScaleOperations',
     color: '#d97706',
   },
   {
@@ -31,7 +31,7 @@ const TILES: Tile[] = [
     description: 'Contacts, contracts, commodity lists, and analytics',
     icon: <TrendingUp size={36} />,
     href: '/dashboard',
-    roles: ['MERCHANDISER', 'ADMIN'],
+    accessKey: 'accessMerchandising',
     color: '#1d2c3f',
   },
   {
@@ -40,7 +40,7 @@ const TILES: Tile[] = [
     description: 'Logistics, scheduling, and operations management',
     icon: <ClipboardList size={36} />,
     href: '/operations-planning',
-    roles: ['MERCHANDISER', 'ADMIN'],
+    accessKey: 'accessOperationsPlanning',
     color: '#0891b2',
   },
   {
@@ -49,7 +49,7 @@ const TILES: Tile[] = [
     description: 'User management and system configuration',
     icon: <Shield size={36} />,
     href: '/administration',
-    roles: ['ADMIN'],
+    accessKey: 'accessAdministration',
     color: '#7c3aed',
   },
 ]
@@ -57,7 +57,8 @@ const TILES: Tile[] = [
 export default function HubPage() {
   const { data: session } = useSession()
   const router = useRouter()
-  const role = (session?.user as unknown as { role?: string })?.role ?? 'MERCHANDISER'
+  const u = session?.user as unknown as Record<string, unknown>
+  const isAdmin = u?.role === 'ADMIN'
   const userName = session?.user?.name ?? ''
 
   return (
@@ -86,7 +87,7 @@ export default function HubPage() {
 
         <div className="grid grid-cols-2 gap-6 w-full max-w-3xl">
           {TILES.map((tile) => {
-            const allowed = tile.roles.includes(role)
+            const allowed = isAdmin || !!(u?.[tile.accessKey])
             return (
               <button
                 key={tile.id}

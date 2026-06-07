@@ -18,11 +18,15 @@ model User {
   role                  String   @default("MERCHANDISER")
   isAdmin               Boolean  @default(false)
   contractNotifications Boolean  @default(false)
-  inviteToken           String?  @unique
-  inviteExpires         DateTime?
-  mustSetPassword       Boolean  @default(false)
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+  inviteToken              String?  @unique
+  inviteExpires            DateTime?
+  mustSetPassword          Boolean  @default(false)
+  accessMerchandising      Boolean  @default(true)
+  accessAdministration     Boolean  @default(false)
+  accessScaleOperations    Boolean  @default(false)
+  accessOperationsPlanning Boolean  @default(false)
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
 
   contractAuditLogs ContractAuditLog[]
 }
