@@ -176,7 +176,13 @@ export default function AdministrationPage() {
             <h2 className="text-xl font-bold text-gray-900">User Access Management</h2>
             <p className="text-sm text-gray-500 mt-0.5">{users.length} user{users.length !== 1 ? 's' : ''} — check boxes control which modules each user can access</p>
           </div>
-          <button className="btn-primary flex items-center gap-2" onClick={() => { setShowCreate(true); setError('') }}>
+          <button
+            onClick={() => { setShowCreate(true); setError('') }}
+            className="flex items-center gap-2 text-sm font-medium text-white px-4 py-2 rounded-md transition-colors"
+            style={{ background: '#2563eb' }}
+            onMouseOver={e => (e.currentTarget.style.background = '#1d4ed8')}
+            onMouseOut={e => (e.currentTarget.style.background = '#2563eb')}
+          >
             <Plus size={15} /> Add User
           </button>
         </div>
