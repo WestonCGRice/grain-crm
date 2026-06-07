@@ -25,6 +25,8 @@ type Deal = {
   notes: string | null
   deletedAt: string | null
   dealType: string | null
+  pickedUpLocationId: string | null
+  deliveredLocationId: string | null
   contact: { id: string; firstName: string; lastName: string; farmingEntityName: string | null }
 }
 
@@ -241,6 +243,8 @@ export default function ContractListPage() {
                                   futuresYear: d.futuresYear, orderEntered: d.orderEntered,
                                   hedged: d.hedged,
                                   dealDate: d.dealDate, notes: d.notes,
+                                  pickedUpLocationId: d.pickedUpLocationId,
+                                  deliveredLocationId: d.deliveredLocationId,
                                 })
                                 setShowDeal(true)
                               }}
