@@ -87,6 +87,7 @@ export default function ContactDetailPage() {
   const [showInteraction, setShowInteraction] = useState(false)
   const [showDeal, setShowDeal] = useState(false)
   const [editDeal, setEditDeal] = useState<DealInitial | null>(null)
+  const [cropYearFilter, setCropYearFilter] = useState('')
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -124,6 +125,8 @@ export default function ContactDetailPage() {
 
   const totalDealValue = contact.deals.reduce((s, d) => s + parseFloat(d.totalValue), 0)
   const activeLists = [contact.riceList && 'Rice', contact.cornList && 'Corn', contact.soybeanList && 'Soybean'].filter(Boolean)
+  const cropYears = [...new Set(contact.deals.map(d => d.cropYear).filter(Boolean) as string[])].sort()
+  const filteredDeals = cropYearFilter ? contact.deals.filter(d => d.cropYear === cropYearFilter) : contact.deals
 
   return (
     <div>
@@ -158,7 +161,7 @@ export default function ContactDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-4 gap-6">
         <div className="space-y-5">
           <div className="card">
             <h2 className="text-sm font-semibold text-gray-900 mb-4">Contact Information</h2>
@@ -296,7 +299,7 @@ export default function ContactDetailPage() {
           </div>
         </div>
 
-        <div className="col-span-2 space-y-5">
+        <div className="col-span-3 space-y-5">
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-gray-900">Interaction History</h2>
@@ -332,17 +335,32 @@ export default function ContactDetailPage() {
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-sm font-semibold text-gray-900">Purchase Grain Contracts</h2>
-              <button className="btn-primary flex items-center gap-1.5 text-xs py-1.5" onClick={() => { setEditDeal(null); setShowDeal(true) }}>
-                <Plus size={13} /> New Contract
-              </button>
+              <div className="flex items-center gap-3">
+                {cropYears.length > 0 && (
+                  <select
+                    value={cropYearFilter}
+                    onChange={e => setCropYearFilter(e.target.value)}
+                    className="text-xs border border-gray-200 rounded-md px-2 py-1.5 text-gray-700 bg-white focus:outline-none focus:ring-1 focus:ring-green-500"
+                  >
+                    <option value="">All Crop Years</option>
+                    {cropYears.map(y => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                )}
+                <button className="btn-primary flex items-center gap-1.5 text-xs py-1.5" onClick={() => { setEditDeal(null); setShowDeal(true) }}>
+                  <Plus size={13} /> New Contract
+                </button>
+              </div>
             </div>
             {contact.deals.length === 0 ? (
               <p className="text-sm text-gray-400 py-4 text-center">No contracts yet</p>
+            ) : filteredDeals.length === 0 ? (
+              <p className="text-sm text-gray-400 py-4 text-center">No contracts for crop year {cropYearFilter}</p>
             ) : (
               <div className="overflow-x-auto">
                 <table>
                   <thead>
                     <tr>
+                      <th style={{ width: 80 }}></th>
                       <th>Contract #</th>
                       <th>Commodity</th>
                       <th>Volume</th>
@@ -357,17 +375,35 @@ export default function ContactDetailPage() {
                       <th>Status</th>
                       <th>Contract Date</th>
                       <th>Last Updated</th>
-                      <th style={{ width: 64 }}></th>
+                      <th style={{ width: 40 }}></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {contact.deals.map((d) => {
+                    {filteredDeals.map((d) => {
                       const unit = d.commodity === 'RICE' ? 'CWT' : 'Bu'
                       const cashPrice = d.basis != null
                         ? parseFloat(d.pricePerBushel) + parseFloat(d.basis)
                         : null
                       return (
                         <tr key={d.id}>
+                          <td>
+                            <button
+                              className="btn-secondary flex items-center gap-1.5 text-xs py-1 px-2"
+                              onClick={() => {
+                                setEditDeal({
+                                  id: d.id, commodity: d.commodity, quantity: d.quantity,
+                                  pricePerBushel: d.pricePerBushel, basis: d.basis,
+                                  status: d.status, contractNumber: d.contractNumber,
+                                  cropYear: d.cropYear, futuresMonth: d.futuresMonth,
+                                  futuresYear: d.futuresYear, orderEntered: d.orderEntered,
+                                  hedged: d.hedged, dealDate: d.dealDate, notes: d.notes,
+                                })
+                                setShowDeal(true)
+                              }}
+                            >
+                              <Edit2 size={12} /> Edit
+                            </button>
+                          </td>
                           <td className="font-mono text-xs font-semibold text-gray-700">
                             {d.contractNumber || <span className="text-gray-400">—</span>}
                           </td>
@@ -385,27 +421,9 @@ export default function ContactDetailPage() {
                           <td className="text-gray-500 text-xs">{formatDate(d.dealDate)}</td>
                           <td className="text-gray-500 text-xs">{formatDate(d.updatedAt)}</td>
                           <td>
-                            <div className="flex items-center gap-2">
-                              <button
-                                className="text-gray-300 hover:text-green-600"
-                                onClick={() => {
-                                  setEditDeal({
-                                    id: d.id, commodity: d.commodity, quantity: d.quantity,
-                                    pricePerBushel: d.pricePerBushel, basis: d.basis,
-                                    status: d.status, contractNumber: d.contractNumber,
-                                    cropYear: d.cropYear, futuresMonth: d.futuresMonth,
-                                    futuresYear: d.futuresYear, orderEntered: d.orderEntered,
-                                    hedged: d.hedged, dealDate: d.dealDate, notes: d.notes,
-                                  })
-                                  setShowDeal(true)
-                                }}
-                              >
-                                <Edit2 size={13} />
-                              </button>
-                              <button className="text-gray-300 hover:text-red-500" onClick={() => deleteDeal(d.id)}>
-                                <Trash2 size={13} />
-                              </button>
-                            </div>
+                            <button className="text-gray-300 hover:text-red-500" onClick={() => deleteDeal(d.id)}>
+                              <Trash2 size={13} />
+                            </button>
                           </td>
                         </tr>
                       )
