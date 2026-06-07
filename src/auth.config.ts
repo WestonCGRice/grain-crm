@@ -7,7 +7,14 @@ export const authConfig = {
   callbacks: {
     session({ session, token }) {
       if (token.id) session.user.id = token.id as string
-      ;(session.user as unknown as { totpEnabled: boolean }).totpEnabled = (token.totpEnabled as boolean) ?? false
+      const u = session.user as unknown as Record<string, unknown>
+      u.totpEnabled = (token.totpEnabled as boolean) ?? false
+      u.role = (token.role as string) ?? 'MERCHANDISER'
+      u.isAdmin = token.role === 'ADMIN'
+      u.accessMerchandising = (token.accessMerchandising as boolean) ?? true
+      u.accessAdministration = (token.accessAdministration as boolean) ?? false
+      u.accessScaleOperations = (token.accessScaleOperations as boolean) ?? false
+      u.accessOperationsPlanning = (token.accessOperationsPlanning as boolean) ?? false
       return session
     },
     authorized({ auth, request: { nextUrl } }) {
