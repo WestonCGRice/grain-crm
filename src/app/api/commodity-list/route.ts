@@ -27,6 +27,7 @@ export async function GET(req: NextRequest) {
         riceList: true,
         cornList: true,
         soybeanList: true,
+        smsOptIn: true,
       },
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     })

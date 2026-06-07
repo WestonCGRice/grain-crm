@@ -22,6 +22,7 @@ type ContactFormData = {
   riceList: boolean
   cornList: boolean
   soybeanList: boolean
+  smsOptIn: boolean
   // Sales lists (Grain Customers)
   riceRoughExport: boolean
   riceRoughDomestic: boolean
@@ -55,7 +56,7 @@ function defaultForm(contactType: string): ContactFormData {
     company: '', title: '', address: '', city: '', state: '', zip: '',
     notes: '', status: 'LEAD',
     contactType,
-    riceList: false, cornList: false, soybeanList: false,
+    riceList: false, cornList: false, soybeanList: false, smsOptIn: false,
     riceRoughExport: false, riceRoughDomestic: false,
     soybeansDomestic: false, soybeansExport: false,
     cornDomestic: false, cornExport: false,
@@ -100,7 +101,7 @@ export default function ContactForm({ initial, contactType: propContactType, onC
     setForm((f) => ({ ...f, [field]: value }))
   }
 
-  type BoolField = 'riceList' | 'cornList' | 'soybeanList' | 'riceRoughExport' | 'riceRoughDomestic' | 'soybeansDomestic' | 'soybeansExport' | 'cornDomestic' | 'cornExport'
+  type BoolField = 'riceList' | 'cornList' | 'soybeanList' | 'smsOptIn' | 'riceRoughExport' | 'riceRoughDomestic' | 'soybeansDomestic' | 'soybeansExport' | 'cornDomestic' | 'cornExport'
   function toggle(field: BoolField) {
     setForm((f) => ({ ...f, [field]: !f[field] }))
   }
@@ -244,6 +245,16 @@ export default function ContactForm({ initial, contactType: propContactType, onC
                   ))}
                 </div>
               </div>
+
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={form.smsOptIn}
+                  onChange={() => toggle('smsOptIn')}
+                  className="w-4 h-4 rounded accent-green-600"
+                />
+                <span className="text-sm text-gray-700">Receive SMS Messages</span>
+              </label>
 
               <div>
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Acres</p>

@@ -55,6 +55,7 @@ type Contact = {
   riceList: boolean
   cornList: boolean
   soybeanList: boolean
+  smsOptIn: boolean
   createdAt: string
   riceAcres: string | null
   cornAcres: string | null
@@ -198,13 +199,14 @@ export default function ContactDetailPage() {
             </div>
           </div>
 
-          {activeLists.length > 0 && (
+          {(activeLists.length > 0 || contact.smsOptIn) && (
             <div className="card">
               <h2 className="text-sm font-semibold text-gray-900 mb-2">Commodity Lists</h2>
               <div className="flex flex-wrap gap-1.5">
                 {contact.riceList && <span className="badge badge-blue">Rice List</span>}
                 {contact.cornList && <span className="badge badge-amber">Corn List</span>}
                 {contact.soybeanList && <span className="badge badge-green">Soybean List</span>}
+                {contact.smsOptIn && <span className="badge badge-green">SMS On</span>}
               </div>
             </div>
           )}

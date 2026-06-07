@@ -37,7 +37,7 @@ export async function PUT(
     const {
       farmingEntityName, firstName, lastName, email, phone, company, title,
       address, city, state, zip, notes, status, contactType,
-      riceList, cornList, soybeanList,
+      riceList, cornList, soybeanList, smsOptIn,
       riceRoughExport, riceRoughDomestic, soybeansDomestic, soybeansExport, cornDomestic, cornExport,
       riceAcres, cornAcres, soybeanAcres, riceEstYield, cornEstYield, soybeanEstYield,
     } = body
@@ -55,6 +55,7 @@ export async function PUT(
         status,
         ...(contactType ? { contactType } : {}),
         riceList: riceList ?? false, cornList: cornList ?? false, soybeanList: soybeanList ?? false,
+        smsOptIn: smsOptIn ?? false,
         riceRoughExport: riceRoughExport ?? false, riceRoughDomestic: riceRoughDomestic ?? false,
         soybeansDomestic: soybeansDomestic ?? false, soybeansExport: soybeansExport ?? false,
         cornDomestic: cornDomestic ?? false, cornExport: cornExport ?? false,

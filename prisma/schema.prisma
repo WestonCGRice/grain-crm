@@ -157,6 +157,7 @@ model Contact {
   riceEstYield      Decimal?      @db.Decimal(10, 2)
   cornEstYield      Decimal?      @db.Decimal(10, 2)
   soybeanEstYield   Decimal?      @db.Decimal(10, 2)
+  smsOptIn          Boolean       @default(false)
   createdAt         DateTime      @default(now())
   updatedAt         DateTime      @updatedAt
 
@@ -250,4 +251,13 @@ model ContractAuditLog {
 
   deal Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
   user User @relation(fields: [userId], references: [id])
+}
+
+model MessageRecord {
+  id             String   @id @default(cuid())
+  commodity      String
+  messageText    String
+  recipientCount Int
+  sentAt         DateTime @default(now())
+  sentByName     String?
 }
