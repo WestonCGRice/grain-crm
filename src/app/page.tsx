@@ -18,8 +18,8 @@ type Tile = {
 const TILES: Tile[] = [
   {
     id: 'scale',
-    label: 'Scale Operations',
-    description: 'Manage incoming and outgoing grain scale tickets',
+    label: 'Scale Operations and Shipments',
+    description: 'Scale tickets, shipments, and direct ship operations',
     icon: <Scale size={36} />,
     href: '/scale-operations',
     accessKey: 'accessScaleOperations',

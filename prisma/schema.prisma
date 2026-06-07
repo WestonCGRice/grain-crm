@@ -31,6 +31,55 @@ model User {
   contractAuditLogs ContractAuditLog[]
 }
 
+model Location {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?
+  city      String?
+  state     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dealsPickedUp    Deal[] @relation("PickedUpLocation")
+  dealsDeliveredTo Deal[] @relation("DeliveredLocation")
+}
+
+model ScaleTicket {
+  id           String    @id @default(cuid())
+  ticketNumber String    @unique
+  ticketType   String
+  ticketDate   DateTime  @default(now())
+  cropYear     String?
+  commodity    String?
+  grossWeight  Decimal?  @db.Decimal(12, 2)
+  tareWeight   Decimal?  @db.Decimal(12, 2)
+  netWeight    Decimal?  @db.Decimal(12, 2)
+  billOfLading String?
+  status       String    @default("ACTIVE")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  grades ScaleTicketGrade?
+}
+
+model ScaleTicketGrade {
+  id            String      @id @default(cuid())
+  ticketId      String      @unique
+  ticket        ScaleTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  moisture      Decimal?    @db.Decimal(6, 2)
+  testWeight    Decimal?    @db.Decimal(6, 2)
+  foreignMatter Decimal?    @db.Decimal(6, 2)
+  splits        Decimal?    @db.Decimal(6, 2)
+  totalDamage   Decimal?    @db.Decimal(6, 2)
+  heatDamage    Decimal?    @db.Decimal(6, 2)
+  milling       Decimal?    @db.Decimal(6, 2)
+  wholeGrain    Decimal?    @db.Decimal(6, 2)
+  grade         String?
+  notes         String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+}
+
 enum Commodity {
   CORN
   SOYBEANS
@@ -160,13 +209,17 @@ model Deal {
   dealDate       DateTime   @default(now())
   notes          String?
   deletedAt      DateTime?
-  dealType       String?
-  createdAt      DateTime   @default(now())
-  updatedAt      DateTime   @updatedAt
+  dealType             String?
+  pickedUpLocationId   String?
+  deliveredLocationId  String?
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
 
   contact           Contact            @relation(fields: [contactId], references: [id], onDelete: Cascade)
   contractAuditLogs ContractAuditLog[]
   futuresContract   FuturesContract?
+  pickedUpLocation  Location?          @relation("PickedUpLocation", fields: [pickedUpLocationId], references: [id])
+  deliveredLocation Location?          @relation("DeliveredLocation", fields: [deliveredLocationId], references: [id])
 }
 
 model FuturesContract {

@@ -12,7 +12,11 @@ export async function GET(
       include: {
         commodityContacts: true,
         interactions: { orderBy: { date: 'desc' } },
-        deals: { where: { deletedAt: null }, orderBy: { dealDate: 'desc' } },
+        deals: {
+          where: { deletedAt: null },
+          orderBy: { dealDate: 'desc' },
+          include: { pickedUpLocation: true, deliveredLocation: true },
+        },
       },
     })
     if (!contact) return NextResponse.json({ error: 'Not found' }, { status: 404 })

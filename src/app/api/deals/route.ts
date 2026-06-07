@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       contactId, commodity, quantity, pricePerBushel, basis,
       cropYear, futuresMonth, futuresYear, orderEntered, hedged,
       status, dealDate, notes, dealType,
+      pickedUpLocationId, deliveredLocationId,
     } = body
 
     const qty = parseFloat(quantity)
@@ -88,6 +89,8 @@ export async function POST(req: NextRequest) {
         dealDate: dealDate ? new Date(dealDate) : new Date(),
         notes: notes || null,
         dealType: dealType || null,
+        pickedUpLocationId: pickedUpLocationId || null,
+        deliveredLocationId: deliveredLocationId || null,
       },
       include: { contact: true },
     })

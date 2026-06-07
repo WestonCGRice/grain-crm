@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 
 type Contact = { id: string; firstName: string; lastName: string }
+type Location = { id: string; name: string; city: string | null; state: string | null }
 
 export type DealInitial = {
   id: string
@@ -20,6 +21,8 @@ export type DealInitial = {
   hedged: string | null
   dealDate: string
   notes: string | null
+  pickedUpLocationId: string | null
+  deliveredLocationId: string | null
 }
 
 type Props = {
@@ -67,6 +70,7 @@ export default function DealForm({
   const isEdit = !!initial
 
   const [contacts, setContacts] = useState<Contact[]>([])
+  const [locations, setLocations] = useState<Location[]>([])
   const [contactId, setContactId] = useState(initContactId ?? '')
   const [commodity, setCommodity] = useState(initial?.commodity ?? initCommodity ?? '')
   const [quantity, setQuantity] = useState(initial?.quantity ?? '')
@@ -82,6 +86,8 @@ export default function DealForm({
     initial?.dealDate ? initial.dealDate.slice(0, 10) : new Date().toISOString().slice(0, 10)
   )
   const [notes, setNotes] = useState(initial?.notes ?? '')
+  const [pickedUpLocationId, setPickedUpLocationId] = useState(initial?.pickedUpLocationId ?? '')
+  const [deliveredLocationId, setDeliveredLocationId] = useState(initial?.deliveredLocationId ?? '')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
@@ -89,6 +95,7 @@ export default function DealForm({
     if (!initContactId && !isEdit) {
       fetch('/api/contacts').then((r) => r.json()).then(setContacts).catch(() => {})
     }
+    fetch('/api/locations').then((r) => r.json()).then(setLocations).catch(() => {})
   }, [initContactId, isEdit])
 
   // Reset futures month when commodity changes if current selection isn't valid
@@ -143,6 +150,8 @@ export default function DealForm({
           dealDate,
           notes,
           dealType,
+          pickedUpLocationId: pickedUpLocationId || null,
+          deliveredLocationId: deliveredLocationId || null,
         }),
       })
       if (!res.ok) {
@@ -340,6 +349,31 @@ export default function DealForm({
               onChange={(e) => setNotes(e.target.value)}
               style={{ resize: 'vertical' }}
             />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="form-label">Picked Up Location</label>
+              <select className="form-input" value={pickedUpLocationId} onChange={(e) => setPickedUpLocationId(e.target.value)}>
+                <option value="">— None —</option>
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}{l.city ? ` (${l.city}${l.state ? `, ${l.state}` : ''})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="form-label">Delivered Location</label>
+              <select className="form-input" value={deliveredLocationId} onChange={(e) => setDeliveredLocationId(e.target.value)}>
+                <option value="">— None —</option>
+                {locations.map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.name}{l.city ? ` (${l.city}${l.state ? `, ${l.state}` : ''})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <div className="flex gap-3 pt-2">

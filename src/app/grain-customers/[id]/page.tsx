@@ -36,6 +36,10 @@ type Deal = {
   dealDate: string
   updatedAt: string
   notes: string | null
+  pickedUpLocationId: string | null
+  deliveredLocationId: string | null
+  pickedUpLocation: { id: string; name: string } | null
+  deliveredLocation: { id: string; name: string } | null
 }
 
 type Contact = {
@@ -291,6 +295,8 @@ export default function GrainCustomerDetailPage() {
                       <th>Basis</th>
                       <th>Cash Price</th>
                       <th>Total Value</th>
+                      <th>Pickup Location</th>
+                      <th>Delivery Location</th>
                       <th>Hedged</th>
                       <th>Status</th>
                       <th>Contract Date</th>
@@ -317,6 +323,8 @@ export default function GrainCustomerDetailPage() {
                                   cropYear: d.cropYear, futuresMonth: d.futuresMonth,
                                   futuresYear: d.futuresYear, orderEntered: d.orderEntered,
                                   hedged: d.hedged, dealDate: d.dealDate, notes: d.notes,
+                                  pickedUpLocationId: d.pickedUpLocationId,
+                                  deliveredLocationId: d.deliveredLocationId,
                                 })
                                 setShowDeal(true)
                               }}
@@ -336,6 +344,8 @@ export default function GrainCustomerDetailPage() {
                           <td>{d.basis != null ? `${formatCurrency(d.basis)}/${unit}` : <span className="text-gray-400">—</span>}</td>
                           <td>{cashPrice != null ? `${formatCurrency(cashPrice)}/${unit}` : <span className="text-gray-400">—</span>}</td>
                           <td className="font-medium text-green-700">{formatCurrency(d.totalValue)}</td>
+                          <td className="text-xs">{d.pickedUpLocation?.name || <span className="text-gray-400">—</span>}</td>
+                          <td className="text-xs">{d.deliveredLocation?.name || <span className="text-gray-400">—</span>}</td>
                           <td>{d.hedged || <span className="text-gray-400">—</span>}</td>
                           <td><span className={DEAL_STATUS_COLORS[d.status]}>{DEAL_STATUS_LABELS[d.status] ?? d.status}</span></td>
                           <td className="text-gray-500 text-xs">{formatDate(d.dealDate)}</td>

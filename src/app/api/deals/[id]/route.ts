@@ -32,6 +32,7 @@ export async function PUT(
       quantity, pricePerBushel, basis,
       cropYear, futuresMonth, futuresYear, orderEntered, hedged,
       status, dealDate, notes, dealType,
+      pickedUpLocationId, deliveredLocationId,
     } = body
 
     const qty = parseFloat(quantity)
@@ -62,6 +63,8 @@ export async function PUT(
         hedged: hedged || null,
         dealDate: dealDate ? new Date(dealDate) : undefined,
         notes: notes || null,
+        pickedUpLocationId: pickedUpLocationId !== undefined ? (pickedUpLocationId || null) : undefined,
+        deliveredLocationId: deliveredLocationId !== undefined ? (deliveredLocationId || null) : undefined,
       },
       include: { contact: true },
     })

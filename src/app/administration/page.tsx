@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, X, Shield, Bell, ArrowLeft, Pencil } from 'lucide-react'
+import { Plus, Trash2, X, Shield, Bell, ArrowLeft, Pencil, MapPin } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 type User = {
@@ -23,6 +23,15 @@ type User = {
   accessOperationsPlanning: boolean
 }
 
+type Location = {
+  id: string
+  name: string
+  address: string | null
+  city: string | null
+  state: string | null
+  createdAt: string
+}
+
 const ROLES = [
   { value: 'MERCHANDISER', label: 'Standard User' },
   { value: 'ADMIN', label: 'Admin' },
@@ -40,12 +49,14 @@ export default function AdministrationPage() {
   const router = useRouter()
   const isAdmin = (session?.user as unknown as { isAdmin?: boolean })?.isAdmin ?? false
 
+  const [tab, setTab] = useState<'users' | 'locations'>('users')
+
+  // ── Users state ──────────────────────────────────────────────────
   const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+  const [usersLoading, setUsersLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
 
-  // Create modal
   const [showCreate, setShowCreate] = useState(false)
   const [newUsername, setNewUsername] = useState('')
   const [newName, setNewName] = useState('')
@@ -59,38 +70,58 @@ export default function AdministrationPage() {
     accessOperationsPlanning: false,
   })
 
-  // Edit modal (name / email / role / notifications only)
   const [editUser, setEditUser] = useState<User | null>(null)
   const [editName, setEditName] = useState('')
   const [editEmail, setEditEmail] = useState('')
   const [editRole, setEditRole] = useState('MERCHANDISER')
   const [editNotify, setEditNotify] = useState(false)
 
+  // ── Locations state ───────────────────────────────────────────────
+  const [locations, setLocations] = useState<Location[]>([])
+  const [locLoading, setLocLoading] = useState(false)
+  const [showAddLoc, setShowAddLoc] = useState(false)
+  const [editLoc, setEditLoc] = useState<Location | null>(null)
+  const [locName, setLocName] = useState('')
+  const [locAddress, setLocAddress] = useState('')
+  const [locCity, setLocCity] = useState('')
+  const [locState, setLocState] = useState('')
+  const [locSaving, setLocSaving] = useState(false)
+  const [locError, setLocError] = useState('')
+
   useEffect(() => {
     if (session && !isAdmin) router.push('/')
   }, [session, isAdmin, router])
 
   const loadUsers = useCallback(async () => {
-    setLoading(true)
+    setUsersLoading(true)
     const res = await fetch('/api/admin/users')
     if (res.ok) setUsers(await res.json())
-    setLoading(false)
+    setUsersLoading(false)
   }, [])
 
-  useEffect(() => { if (isAdmin) loadUsers() }, [isAdmin, loadUsers])
+  const loadLocations = useCallback(async () => {
+    setLocLoading(true)
+    const res = await fetch('/api/locations')
+    if (res.ok) setLocations(await res.json())
+    setLocLoading(false)
+  }, [])
 
+  useEffect(() => {
+    if (isAdmin) {
+      loadUsers()
+      loadLocations()
+    }
+  }, [isAdmin, loadUsers, loadLocations])
+
+  // ── User handlers ─────────────────────────────────────────────────
   async function handleCreate(e: { preventDefault(): void }) {
     e.preventDefault()
-    setSaving(true)
-    setError('')
+    setSaving(true); setError('')
     try {
       const res = await fetch('/api/admin/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          username: newUsername, name: newName, email: newEmail,
-          role: newRole, contractNotifications: newNotify, ...newAccess,
-        }),
+        body: JSON.stringify({ username: newUsername, name: newName, email: newEmail, role: newRole, contractNotifications: newNotify, ...newAccess }),
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to create user')
@@ -100,25 +131,18 @@ export default function AdministrationPage() {
       loadUsers()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   function openEdit(u: User) {
-    setEditUser(u)
-    setEditName(u.name ?? '')
-    setEditEmail(u.email ?? '')
-    setEditRole(u.role === 'ADMIN' ? 'ADMIN' : 'MERCHANDISER')
-    setEditNotify(u.contractNotifications)
-    setError('')
+    setEditUser(u); setEditName(u.name ?? ''); setEditEmail(u.email ?? '')
+    setEditRole(u.role === 'ADMIN' ? 'ADMIN' : 'MERCHANDISER'); setEditNotify(u.contractNotifications); setError('')
   }
 
   async function handleEdit(e: { preventDefault(): void }) {
     e.preventDefault()
     if (!editUser) return
-    setSaving(true)
-    setError('')
+    setSaving(true); setError('')
     try {
       const res = await fetch(`/api/admin/users/${editUser.id}`, {
         method: 'PUT',
@@ -127,29 +151,59 @@ export default function AdministrationPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error ?? 'Failed to update user')
-      setEditUser(null)
-      loadUsers()
+      setEditUser(null); loadUsers()
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error')
-    } finally {
-      setSaving(false)
-    }
+    } finally { setSaving(false) }
   }
 
   async function toggleAccess(userId: string, field: string, value: boolean) {
-    // Optimistic update
     setUsers(prev => prev.map(u => u.id === userId ? { ...u, [field]: value } : u))
     await fetch(`/api/admin/users/${userId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ [field]: value }),
     })
   }
 
-  async function handleDelete(user: User) {
+  async function handleDeleteUser(user: User) {
     if (!confirm(`Delete user "${user.username}"? This cannot be undone.`)) return
     await fetch(`/api/admin/users/${user.id}`, { method: 'DELETE' })
     loadUsers()
+  }
+
+  // ── Location handlers ─────────────────────────────────────────────
+  function openAddLoc() {
+    setLocName(''); setLocAddress(''); setLocCity(''); setLocState('')
+    setLocError(''); setShowAddLoc(true); setEditLoc(null)
+  }
+
+  function openEditLoc(l: Location) {
+    setEditLoc(l); setLocName(l.name); setLocAddress(l.address ?? '')
+    setLocCity(l.city ?? ''); setLocState(l.state ?? ''); setLocError(''); setShowAddLoc(true)
+  }
+
+  async function handleSaveLoc(e: { preventDefault(): void }) {
+    e.preventDefault()
+    setLocSaving(true); setLocError('')
+    try {
+      const url = editLoc ? `/api/locations/${editLoc.id}` : '/api/locations'
+      const method = editLoc ? 'PUT' : 'POST'
+      const res = await fetch(url, {
+        method, headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: locName, address: locAddress, city: locCity, state: locState }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error ?? 'Failed to save location')
+      setShowAddLoc(false); setEditLoc(null); loadLocations()
+    } catch (err) {
+      setLocError(err instanceof Error ? err.message : 'Error')
+    } finally { setLocSaving(false) }
+  }
+
+  async function handleDeleteLoc(loc: Location) {
+    if (!confirm(`Delete location "${loc.name}"? Contracts using this location will lose the reference.`)) return
+    await fetch(`/api/locations/${loc.id}`, { method: 'DELETE' })
+    loadLocations()
   }
 
   if (!isAdmin) return null
@@ -162,128 +216,177 @@ export default function AdministrationPage() {
           <img src="/central-grain-logo.png" alt="Central Grain" className="h-10 object-contain" style={{ background: 'white', borderRadius: 6, padding: '2px 8px' }} />
           <span className="text-white font-semibold text-lg">Administration</span>
         </div>
-        <button
-          onClick={() => router.push('/')}
-          className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
-        >
+        <button onClick={() => router.push('/')} className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors">
           <ArrowLeft size={14} /> Return to Home
         </button>
       </header>
 
       <main className="flex-1 w-full px-6 py-8" style={{ maxWidth: 1400, margin: '0 auto' }}>
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-bold text-gray-900">User Access Management</h2>
-            <p className="text-sm text-gray-500 mt-0.5">{users.length} user{users.length !== 1 ? 's' : ''} — check boxes control which modules each user can access</p>
-          </div>
-          <button
-            onClick={() => { setShowCreate(true); setError('') }}
-            className="flex items-center gap-2 text-sm font-medium text-white px-4 py-2 rounded-md transition-colors"
-            style={{ background: '#2563eb' }}
-            onMouseOver={e => (e.currentTarget.style.background = '#1d4ed8')}
-            onMouseOut={e => (e.currentTarget.style.background = '#2563eb')}
-          >
-            <Plus size={15} /> Add User
-          </button>
+        {/* Tab switcher */}
+        <div className="flex gap-1 mb-6 border-b border-gray-200">
+          {(['users', 'locations'] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`px-5 py-2.5 text-sm font-medium rounded-t-lg transition-colors ${
+                tab === t ? 'bg-white border border-b-white border-gray-200 text-gray-900 -mb-px' : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t === 'users' ? 'Users' : 'Locations'}
+            </button>
+          ))}
         </div>
 
-        <div className="table-container">
-          {loading ? (
-            <div className="p-12 text-center text-gray-400">Loading…</div>
-          ) : users.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">No users yet.</div>
-          ) : (
-            <table>
-              <thead>
-                <tr>
-                  <th>Username</th>
-                  <th>Name</th>
-                  <th>Email</th>
-                  <th className="text-center">Merchandising</th>
-                  <th className="text-center">Administration</th>
-                  <th className="text-center">Scale Operations</th>
-                  <th className="text-center">Operations Planning</th>
-                  <th>Notifications</th>
-                  <th>2FA</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th style={{ width: 60 }}></th>
-                </tr>
-              </thead>
-              <tbody>
-                {users.map((u) => {
-                  const isUserAdmin = u.role === 'ADMIN'
-                  return (
-                    <tr key={u.id}>
-                      <td className="font-mono text-sm font-medium text-gray-800">
-                        {u.username}
-                        {isUserAdmin && (
-                          <span className="ml-2 badge badge-navy text-xs">Admin</span>
-                        )}
-                      </td>
-                      <td>{u.name || <span className="text-gray-400">—</span>}</td>
-                      <td className="text-sm text-gray-600">{u.email || <span className="text-gray-400">—</span>}</td>
-                      {MODULES.map((mod) => (
-                        <td key={mod.key} className="text-center">
-                          <input
-                            type="checkbox"
-                            checked={isUserAdmin || u[mod.key]}
-                            disabled={isUserAdmin || u.id === session?.user?.id}
-                            onChange={(e) => toggleAccess(u.id, mod.key, e.target.checked)}
-                            className="w-4 h-4 accent-green-600 cursor-pointer disabled:cursor-default"
-                            title={isUserAdmin ? 'Admins always have full access' : mod.label}
-                          />
-                        </td>
-                      ))}
-                      <td>
-                        <span className={`badge ${u.contractNotifications ? 'badge-green' : 'badge-gray'}`}>
-                          {u.contractNotifications ? 'On' : 'Off'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge ${u.totpEnabled ? 'badge-green' : 'badge-yellow'}`}>
-                          {u.totpEnabled ? 'Enabled' : 'Pending'}
-                        </span>
-                      </td>
-                      <td>
-                        <span className={`badge ${u.mustSetPassword ? 'badge-yellow' : 'badge-green'}`}>
-                          {u.mustSetPassword ? 'Invite Pending' : 'Active'}
-                        </span>
-                      </td>
-                      <td className="text-xs text-gray-500">{formatDate(u.createdAt)}</td>
-                      <td>
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="text-gray-300 hover:text-[#1d2c3f]"
-                            onClick={() => openEdit(u)}
-                            title="Edit user"
-                          >
-                            <Pencil size={13} />
-                          </button>
-                          <button
-                            className="text-gray-300 hover:text-red-500"
-                            onClick={() => handleDelete(u)}
-                            disabled={u.id === session?.user?.id}
-                            title={u.id === session?.user?.id ? 'Cannot delete your own account' : 'Delete user'}
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </td>
+        {/* ── Users tab ── */}
+        {tab === 'users' && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">User Access Management</h2>
+                <p className="text-sm text-gray-500 mt-0.5">{users.length} user{users.length !== 1 ? 's' : ''} — check boxes control which modules each user can access</p>
+              </div>
+              <button
+                onClick={() => { setShowCreate(true); setError('') }}
+                className="flex items-center gap-2 text-sm font-medium text-white px-4 py-2 rounded-md transition-colors"
+                style={{ background: '#2563eb' }}
+                onMouseOver={e => (e.currentTarget.style.background = '#1d4ed8')}
+                onMouseOut={e => (e.currentTarget.style.background = '#2563eb')}
+              >
+                <Plus size={15} /> Add User
+              </button>
+            </div>
+
+            <div className="table-container">
+              {usersLoading ? (
+                <div className="p-12 text-center text-gray-400">Loading…</div>
+              ) : users.length === 0 ? (
+                <div className="p-12 text-center text-gray-400">No users yet.</div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Username</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th className="text-center">Merchandising</th>
+                      <th className="text-center">Administration</th>
+                      <th className="text-center">Scale Operations</th>
+                      <th className="text-center">Operations Planning</th>
+                      <th>Notifications</th>
+                      <th>2FA</th>
+                      <th>Status</th>
+                      <th>Created</th>
+                      <th style={{ width: 60 }}></th>
                     </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          )}
-        </div>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => {
+                      const isUserAdmin = u.role === 'ADMIN'
+                      return (
+                        <tr key={u.id}>
+                          <td className="font-mono text-sm font-medium text-gray-800">
+                            {u.username}
+                            {isUserAdmin && <span className="ml-2 badge badge-navy text-xs">Admin</span>}
+                          </td>
+                          <td>{u.name || <span className="text-gray-400">—</span>}</td>
+                          <td className="text-sm text-gray-600">{u.email || <span className="text-gray-400">—</span>}</td>
+                          {MODULES.map((mod) => (
+                            <td key={mod.key} className="text-center">
+                              <input
+                                type="checkbox"
+                                checked={isUserAdmin || u[mod.key]}
+                                disabled={isUserAdmin || u.id === session?.user?.id}
+                                onChange={(e) => toggleAccess(u.id, mod.key, e.target.checked)}
+                                className="w-4 h-4 accent-green-600 cursor-pointer disabled:cursor-default"
+                                title={isUserAdmin ? 'Admins always have full access' : mod.label}
+                              />
+                            </td>
+                          ))}
+                          <td><span className={`badge ${u.contractNotifications ? 'badge-green' : 'badge-gray'}`}>{u.contractNotifications ? 'On' : 'Off'}</span></td>
+                          <td><span className={`badge ${u.totpEnabled ? 'badge-green' : 'badge-yellow'}`}>{u.totpEnabled ? 'Enabled' : 'Pending'}</span></td>
+                          <td><span className={`badge ${u.mustSetPassword ? 'badge-yellow' : 'badge-green'}`}>{u.mustSetPassword ? 'Invite Pending' : 'Active'}</span></td>
+                          <td className="text-xs text-gray-500">{formatDate(u.createdAt)}</td>
+                          <td>
+                            <div className="flex items-center gap-2">
+                              <button className="text-gray-300 hover:text-[#1d2c3f]" onClick={() => openEdit(u)} title="Edit user"><Pencil size={13} /></button>
+                              <button className="text-gray-300 hover:text-red-500" onClick={() => handleDeleteUser(u)} disabled={u.id === session?.user?.id} title={u.id === session?.user?.id ? 'Cannot delete your own account' : 'Delete user'}><Trash2 size={13} /></button>
+                            </div>
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <p className="mt-3 text-xs text-gray-400">* Access changes take effect the next time the user logs in. Admin users always have full access to all modules.</p>
+          </>
+        )}
 
-        <p className="mt-3 text-xs text-gray-400">
-          * Access changes take effect the next time the user logs in. Admin users always have full access to all modules.
-        </p>
+        {/* ── Locations tab ── */}
+        {tab === 'locations' && (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-bold text-gray-900">Saved Locations</h2>
+                <p className="text-sm text-gray-500 mt-0.5">Pickup and delivery locations available on contracts — {locations.length} saved</p>
+              </div>
+              <button
+                onClick={openAddLoc}
+                className="flex items-center gap-2 text-sm font-medium text-white px-4 py-2 rounded-md transition-colors"
+                style={{ background: '#2563eb' }}
+                onMouseOver={e => (e.currentTarget.style.background = '#1d4ed8')}
+                onMouseOut={e => (e.currentTarget.style.background = '#2563eb')}
+              >
+                <Plus size={15} /> Add Location
+              </button>
+            </div>
+
+            <div className="table-container">
+              {locLoading ? (
+                <div className="p-12 text-center text-gray-400">Loading…</div>
+              ) : locations.length === 0 ? (
+                <div className="p-12 text-center">
+                  <MapPin size={32} className="mx-auto text-gray-300 mb-3" />
+                  <p className="text-gray-400">No locations saved yet. Add your first location above.</p>
+                </div>
+              ) : (
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Address</th>
+                      <th>City</th>
+                      <th>State</th>
+                      <th>Added</th>
+                      <th style={{ width: 60 }}></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {locations.map((l) => (
+                      <tr key={l.id}>
+                        <td className="font-medium text-gray-800">{l.name}</td>
+                        <td className="text-sm text-gray-600">{l.address || <span className="text-gray-400">—</span>}</td>
+                        <td className="text-sm text-gray-600">{l.city || <span className="text-gray-400">—</span>}</td>
+                        <td className="text-sm text-gray-600">{l.state || <span className="text-gray-400">—</span>}</td>
+                        <td className="text-xs text-gray-500">{formatDate(l.createdAt)}</td>
+                        <td>
+                          <div className="flex items-center gap-2">
+                            <button className="text-gray-300 hover:text-[#1d2c3f]" onClick={() => openEditLoc(l)} title="Edit location"><Pencil size={13} /></button>
+                            <button className="text-gray-300 hover:text-red-500" onClick={() => handleDeleteLoc(l)} title="Delete location"><Trash2 size={13} /></button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </>
+        )}
       </main>
 
-      {/* Create user modal */}
+      {/* ── Create user modal ── */}
       {showCreate && (
         <div className="modal-overlay" onClick={() => setShowCreate(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -293,14 +396,8 @@ export default function AdministrationPage() {
             </div>
             {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
             <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="form-label">Username *</label>
-                <input className="form-input" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required />
-              </div>
-              <div>
-                <label className="form-label">Full Name</label>
-                <input className="form-input" value={newName} onChange={(e) => setNewName(e.target.value)} />
-              </div>
+              <div><label className="form-label">Username *</label><input className="form-input" value={newUsername} onChange={(e) => setNewUsername(e.target.value)} required /></div>
+              <div><label className="form-label">Full Name</label><input className="form-input" value={newName} onChange={(e) => setNewName(e.target.value)} /></div>
               <div>
                 <label className="form-label">Email Address *</label>
                 <input className="form-input" type="email" value={newEmail} onChange={(e) => setNewEmail(e.target.value)} required />
@@ -318,12 +415,7 @@ export default function AdministrationPage() {
                   <div className="space-y-2 mt-1">
                     {MODULES.map((mod) => (
                       <label key={mod.key} className="flex items-center gap-2 cursor-pointer">
-                        <input
-                          type="checkbox"
-                          checked={newAccess[mod.key]}
-                          onChange={(e) => setNewAccess(prev => ({ ...prev, [mod.key]: e.target.checked }))}
-                          className="w-4 h-4 accent-green-600"
-                        />
+                        <input type="checkbox" checked={newAccess[mod.key]} onChange={(e) => setNewAccess(prev => ({ ...prev, [mod.key]: e.target.checked }))} className="w-4 h-4 accent-green-600" />
                         <span className="text-sm text-gray-700">{mod.label}</span>
                       </label>
                     ))}
@@ -343,7 +435,7 @@ export default function AdministrationPage() {
         </div>
       )}
 
-      {/* Edit user modal (name / email / role / notifications) */}
+      {/* ── Edit user modal ── */}
       {editUser && (
         <div className="modal-overlay" onClick={() => setEditUser(null)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -353,14 +445,8 @@ export default function AdministrationPage() {
             </div>
             {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
             <form onSubmit={handleEdit} className="space-y-4">
-              <div>
-                <label className="form-label">Full Name</label>
-                <input className="form-input" value={editName} onChange={(e) => setEditName(e.target.value)} />
-              </div>
-              <div>
-                <label className="form-label">Email Address</label>
-                <input className="form-input" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
-              </div>
+              <div><label className="form-label">Full Name</label><input className="form-input" value={editName} onChange={(e) => setEditName(e.target.value)} /></div>
+              <div><label className="form-label">Email Address</label><input className="form-input" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} /></div>
               <div>
                 <label className="form-label">Role *</label>
                 <select className="form-input" value={editRole} onChange={(e) => setEditRole(e.target.value)}>
@@ -372,9 +458,7 @@ export default function AdministrationPage() {
                 <span className="text-sm font-medium text-gray-700 flex items-center gap-1"><Bell size={13} /> Contract Notifications</span>
               </label>
               {editUser.id === session?.user?.id && (
-                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">
-                  You are editing your own account. Role changes take effect on next login.
-                </p>
+                <p className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded p-2">You are editing your own account. Role changes take effect on next login.</p>
               )}
               <div className="flex gap-3 pt-2">
                 <button type="submit" className="btn-primary flex-1" disabled={saving}>{saving ? 'Saving…' : 'Save Changes'}</button>
@@ -385,11 +469,33 @@ export default function AdministrationPage() {
         </div>
       )}
 
+      {/* ── Add / Edit location modal ── */}
+      {showAddLoc && (
+        <div className="modal-overlay" onClick={() => setShowAddLoc(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-semibold text-gray-900">{editLoc ? 'Edit Location' : 'Add Location'}</h2>
+              <button onClick={() => setShowAddLoc(false)} className="text-gray-400 hover:text-gray-600"><X size={20} /></button>
+            </div>
+            {locError && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{locError}</div>}
+            <form onSubmit={handleSaveLoc} className="space-y-4">
+              <div><label className="form-label">Location Name *</label><input className="form-input" value={locName} onChange={(e) => setLocName(e.target.value)} required placeholder="e.g. Central Grain Elevator" /></div>
+              <div><label className="form-label">Address</label><input className="form-input" value={locAddress} onChange={(e) => setLocAddress(e.target.value)} placeholder="123 Main St" /></div>
+              <div className="grid grid-cols-2 gap-3">
+                <div><label className="form-label">City</label><input className="form-input" value={locCity} onChange={(e) => setLocCity(e.target.value)} placeholder="England" /></div>
+                <div><label className="form-label">State</label><input className="form-input" value={locState} onChange={(e) => setLocState(e.target.value)} placeholder="AR" maxLength={2} /></div>
+              </div>
+              <div className="flex gap-3 pt-2">
+                <button type="submit" className="btn-primary flex-1" disabled={locSaving}>{locSaving ? 'Saving…' : editLoc ? 'Save Changes' : 'Add Location'}</button>
+                <button type="button" className="btn-secondary" onClick={() => setShowAddLoc(false)}>Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       <div className="fixed bottom-6 right-6">
-        <button
-          onClick={() => router.push('/dashboard')}
-          className="flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg shadow-sm border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors"
-        >
+        <button onClick={() => router.push('/dashboard')} className="flex items-center gap-2 text-xs font-medium px-3 py-2 rounded-lg shadow-sm border border-gray-200 bg-white text-gray-600 hover:bg-gray-50 transition-colors">
           <Shield size={13} /> Go to Merchandising
         </button>
       </div>
