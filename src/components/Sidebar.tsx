@@ -69,7 +69,8 @@ export default function Sidebar() {
 
       <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
         {/* Dashboard */}
-        <NavLink item={{ href: '/dashboard', label: 'Dashboard', icon: <Home size={15} />, matchPrefix: '/dashboard' }} />
+        <NavLink item={{ href: '/dashboard', label: 'Grain Merchandising Dashboard', icon: <Home size={15} />, matchPrefix: '/dashboard' }} />
+        <NavLink item={{ href: '/', label: 'Select Channel', icon: <ChevronRight size={15} />, matchPrefix: '/__never__' }} />
 
         {/* Contacts */}
         <SectionLabel>Contacts</SectionLabel>

@@ -56,7 +56,7 @@ export default function DashboardPage() {
   return (
     <div>
       <div className="mb-7">
-        <h1 className="page-title">Dashboard</h1>
+        <h1 className="page-title">Grain Merchandising Dashboard</h1>
         <p className="page-subtitle">Welcome to GrainCRM — your grain merchandising platform</p>
       </div>
 
