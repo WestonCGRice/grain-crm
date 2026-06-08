@@ -40,8 +40,10 @@ model Location {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  dealsPickedUp    Deal[] @relation("PickedUpLocation")
-  dealsDeliveredTo Deal[] @relation("DeliveredLocation")
+  dealsPickedUp        Deal[]     @relation("PickedUpLocation")
+  dealsDeliveredTo     Deal[]     @relation("DeliveredLocation")
+  dispatchPickups      Dispatch[] @relation("DispatchPickupLocation")
+  dispatchDeliveries   Dispatch[] @relation("DispatchDeliveryLocation")
 }
 
 model ScaleTicket {
@@ -260,4 +262,45 @@ model MessageRecord {
   recipientCount Int
   sentAt         DateTime @default(now())
   sentByName     String?
+}
+
+model Driver {
+  id        String     @id @default(cuid())
+  name      String
+  phone     String?
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  dispatches Dispatch[]
+}
+
+model Truck {
+  id          String     @id @default(cuid())
+  number      String     @unique
+  description String?
+  isActive    Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  dispatches Dispatch[]
+}
+
+model Dispatch {
+  id                 String   @id @default(cuid())
+  truckId            String
+  driverId           String
+  commodity          String
+  pickupLocationId   String
+  deliveryLocationId String
+  startTime          DateTime
+  durationMinutes    Int      @default(90)
+  notes              String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  truck            Truck    @relation(fields: [truckId], references: [id])
+  driver           Driver   @relation(fields: [driverId], references: [id])
+  pickupLocation   Location @relation("DispatchPickupLocation", fields: [pickupLocationId], references: [id])
+  deliveryLocation Location @relation("DispatchDeliveryLocation", fields: [deliveryLocationId], references: [id])
 }
