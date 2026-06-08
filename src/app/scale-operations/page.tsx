@@ -61,7 +61,7 @@ export default function ScaleOperationsPage() {
           >
             <Scale size={36} className="text-amber-500" />
             <div className="text-center">
-              <div className="font-semibold text-gray-900">Operate Scale</div>
+              <div className="font-semibold text-gray-900">Inbound and Outbound Truck Scale Operations</div>
               <div className="text-xs text-gray-500 mt-0.5">Weigh in / weigh out trucks</div>
             </div>
           </button>
@@ -83,7 +83,7 @@ export default function ScaleOperationsPage() {
           >
             <MapPin size={36} className="text-green-600" />
             <div className="text-center">
-              <div className="font-semibold text-gray-900">Select Location</div>
+              <div className="font-semibold text-gray-900">Shipping and Receiving Location Management</div>
               <div className="text-xs text-gray-500 mt-0.5">Set active operating location</div>
             </div>
           </button>
