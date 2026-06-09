@@ -23,6 +23,7 @@ export async function GET() {
       totpEnabled: true, mustSetPassword: true, createdAt: true,
       accessMerchandising: true, accessAdministration: true,
       accessScaleOperations: true, accessOperationsPlanning: true,
+      accountLocked: true,
     },
     orderBy: { createdAt: 'asc' },
   })

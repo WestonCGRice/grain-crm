@@ -40,7 +40,7 @@ export async function PUT(
       id: true, username: true, name: true, email: true,
       role: true, isAdmin: true, contractNotifications: true, totpEnabled: true, mustSetPassword: true, createdAt: true,
       accessMerchandising: true, accessAdministration: true,
-      accessScaleOperations: true, accessOperationsPlanning: true,
+      accessScaleOperations: true, accessOperationsPlanning: true, accountLocked: true,
     },
   })
   return NextResponse.json(user)
@@ -59,6 +59,7 @@ export async function PATCH(
   const {
     isAdmin, contractNotifications,
     accessMerchandising, accessAdministration, accessScaleOperations, accessOperationsPlanning,
+    unlockAccount,
   } = body
 
   const user = await prisma.user.update({
@@ -70,12 +71,13 @@ export async function PATCH(
       ...(accessAdministration !== undefined ? { accessAdministration } : {}),
       ...(accessScaleOperations !== undefined ? { accessScaleOperations } : {}),
       ...(accessOperationsPlanning !== undefined ? { accessOperationsPlanning } : {}),
+      ...(unlockAccount ? { accountLocked: false, failedLoginAttempts: 0, failedLoginWindowStart: null } : {}),
     },
     select: {
       id: true, username: true, name: true, email: true,
       role: true, isAdmin: true, contractNotifications: true, totpEnabled: true, mustSetPassword: true, createdAt: true,
       accessMerchandising: true, accessAdministration: true,
-      accessScaleOperations: true, accessOperationsPlanning: true,
+      accessScaleOperations: true, accessOperationsPlanning: true, accountLocked: true,
     },
   })
   return NextResponse.json(user)

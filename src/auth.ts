@@ -26,6 +26,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           const user = await prisma.user.findUnique({ where: { username } })
           if (!user) return null
 
+          if (user.accountLocked) return null
+
           const passwordValid = await bcrypt.compare(password, user.passwordHash)
           if (!passwordValid) return null
 

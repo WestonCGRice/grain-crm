@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { Plus, Trash2, X, Shield, Bell, ArrowLeft, Pencil, MapPin } from 'lucide-react'
+import { Plus, Trash2, X, Shield, Bell, ArrowLeft, Pencil, MapPin, MailIcon, Unlock } from 'lucide-react'
 import { formatDate } from '@/lib/utils'
 
 type User = {
@@ -21,6 +21,7 @@ type User = {
   accessAdministration: boolean
   accessScaleOperations: boolean
   accessOperationsPlanning: boolean
+  accountLocked: boolean
 }
 
 type Location = {
@@ -171,6 +172,25 @@ export default function AdministrationPage() {
     loadUsers()
   }
 
+  async function handleResendInvite(user: User) {
+    if (!user.email) { alert('This user has no email address on file. Edit the user to add one first.'); return }
+    if (!confirm(`Re-send invitation to ${user.email}? This will generate a new setup link and clear any lockout.`)) return
+    const res = await fetch(`/api/admin/users/${user.id}/resend-invite`, { method: 'POST' })
+    const data = await res.json()
+    if (!res.ok) { alert(data.error ?? 'Failed to send invite'); return }
+    alert(`Invitation sent to ${user.email}`)
+    loadUsers()
+  }
+
+  async function handleUnlock(user: User) {
+    if (!confirm(`Unlock account for "${user.username}"? This clears the lockout and resets the failed login counter.`)) return
+    await fetch(`/api/admin/users/${user.id}`, {
+      method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ unlockAccount: true }),
+    })
+    loadUsers()
+  }
+
   // ── Location handlers ─────────────────────────────────────────────
   function openAddLoc() {
     setLocName(''); setLocAddress(''); setLocCity(''); setLocState('')
@@ -304,11 +324,19 @@ export default function AdministrationPage() {
                           ))}
                           <td><span className={`badge ${u.contractNotifications ? 'badge-green' : 'badge-gray'}`}>{u.contractNotifications ? 'On' : 'Off'}</span></td>
                           <td><span className={`badge ${u.totpEnabled ? 'badge-green' : 'badge-yellow'}`}>{u.totpEnabled ? 'Enabled' : 'Pending'}</span></td>
-                          <td><span className={`badge ${u.mustSetPassword ? 'badge-yellow' : 'badge-green'}`}>{u.mustSetPassword ? 'Invite Pending' : 'Active'}</span></td>
+                          <td>
+                            {u.accountLocked
+                              ? <span className="badge badge-red">Locked</span>
+                              : <span className={`badge ${u.mustSetPassword ? 'badge-yellow' : 'badge-green'}`}>{u.mustSetPassword ? 'Invite Pending' : 'Active'}</span>}
+                          </td>
                           <td className="text-xs text-gray-500">{formatDate(u.createdAt)}</td>
                           <td>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                               <button className="text-gray-300 hover:text-[#1d2c3f]" onClick={() => openEdit(u)} title="Edit user"><Pencil size={13} /></button>
+                              <button className="text-gray-300 hover:text-blue-600" onClick={() => handleResendInvite(u)} title="Re-send invitation / reset password link"><MailIcon size={13} /></button>
+                              {u.accountLocked && (
+                                <button className="text-red-400 hover:text-green-600" onClick={() => handleUnlock(u)} title="Unlock account"><Unlock size={13} /></button>
+                              )}
                               <button className="text-gray-300 hover:text-red-500" onClick={() => handleDeleteUser(u)} disabled={u.id === session?.user?.id} title={u.id === session?.user?.id ? 'Cannot delete your own account' : 'Delete user'}><Trash2 size={13} /></button>
                             </div>
                           </td>

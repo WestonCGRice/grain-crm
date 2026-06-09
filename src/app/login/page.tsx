@@ -29,7 +29,7 @@ export default function LoginPage() {
       })
       const data = await res.json()
       if (!data.valid) {
-        setError('Invalid username or password.')
+        setError(data.message ?? 'Invalid username or password.')
         return
       }
       if (data.requiresTotp) {

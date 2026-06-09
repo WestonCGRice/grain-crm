@@ -21,12 +21,15 @@ model User {
   inviteToken              String?  @unique
   inviteExpires            DateTime?
   mustSetPassword          Boolean  @default(false)
-  accessMerchandising      Boolean  @default(true)
-  accessAdministration     Boolean  @default(false)
-  accessScaleOperations    Boolean  @default(false)
-  accessOperationsPlanning Boolean  @default(false)
-  createdAt                DateTime @default(now())
-  updatedAt                DateTime @updatedAt
+  accessMerchandising      Boolean   @default(true)
+  accessAdministration     Boolean   @default(false)
+  accessScaleOperations    Boolean   @default(false)
+  accessOperationsPlanning Boolean   @default(false)
+  failedLoginAttempts      Int       @default(0)
+  failedLoginWindowStart   DateTime?
+  accountLocked            Boolean   @default(false)
+  createdAt                DateTime  @default(now())
+  updatedAt                DateTime  @updatedAt
 
   contractAuditLogs ContractAuditLog[]
 }
