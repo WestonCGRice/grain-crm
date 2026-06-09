@@ -6,7 +6,7 @@ import { ArrowLeft, ChevronLeft, ChevronRight, Plus, X, Truck, Users } from 'luc
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const HOUR_HEIGHT = 64        // px per hour
-const COL_WIDTH = 78          // px per dispatch column (15 cols × 78 = 1170px)
+const COL_WIDTH = 68          // px per dispatch column (15 cols × 68 = 1020px)
 const NUM_COLS = 15
 const START_HOUR = 5          // 5 AM
 const END_HOUR = 22           // 10 PM
@@ -436,14 +436,19 @@ export default function TruckDispatchingPage() {
 
   const weekMonday = addDays(currentWeekMonday, weekOffset * 7)
   const selectedDate = addDays(weekMonday, selectedDayIndex)
+  // Use a stable string as the dep — Date objects are new every render and cause infinite loops
+  const selectedDateStr = toDateStr(selectedDate)
   const isReadOnly = selectedDate < today
 
   const loadDispatches = useCallback(async () => {
     setLoading(true)
-    const res = await fetch(`/api/dispatches?date=${toDateStr(selectedDate)}`)
-    if (res.ok) setDispatches(await res.json())
-    setLoading(false)
-  }, [selectedDate])  // eslint-disable-line react-hooks/exhaustive-deps
+    try {
+      const res = await fetch(`/api/dispatches?date=${selectedDateStr}`)
+      if (res.ok) setDispatches(await res.json())
+      else setDispatches([])
+    } catch { setDispatches([]) }
+    finally { setLoading(false) }
+  }, [selectedDateStr])
 
   const loadResources = useCallback(async () => {
     const [dRes, tRes, lRes] = await Promise.all([
@@ -507,7 +512,7 @@ export default function TruckDispatchingPage() {
         </div>
       </header>
 
-      <main className="flex-1 px-4 py-4" style={{ maxWidth: totalCalW + 32, margin: '0 auto', width: '100%' }}>
+      <main className="flex-1 px-4 py-4 w-full">
 
         {/* Week navigation + day selector */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-3 mb-4">
@@ -572,7 +577,7 @@ export default function TruckDispatchingPage() {
         </div>
 
         {/* Calendar */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-auto" style={{ maxHeight: 'calc(100vh - 220px)' }}>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100" style={{ maxHeight: 'calc(100vh - 220px)', overflowY: 'auto', overflowX: 'auto' }}>
           {loading ? (
             <div className="p-12 text-center text-gray-400">Loading…</div>
           ) : (
