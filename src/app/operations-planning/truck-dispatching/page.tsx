@@ -88,15 +88,18 @@ function DriverModal({ drivers, trucks, onClose, onRefresh }: {
   onClose: () => void; onRefresh: () => void
 }) {
   const [tab, setTab] = useState<'drivers' | 'trucks'>('drivers')
-  const [dName, setDName] = useState(''); const [dPhone, setDPhone] = useState('')
+  const [dName, setDName] = useState('')
+  const [dCountryCode, setDCountryCode] = useState('+1')
+  const [dPhone, setDPhone] = useState('')
   const [tNumber, setTNumber] = useState(''); const [tDesc, setTDesc] = useState('')
   const [saving, setSaving] = useState(false); const [err, setErr] = useState('')
 
   async function addDriver(e: { preventDefault(): void }) {
     e.preventDefault(); setSaving(true); setErr('')
-    const res = await fetch('/api/drivers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: dName, phone: dPhone }) })
+    const fullPhone = dPhone.trim() ? `${dCountryCode.trim()} ${dPhone.trim()}` : null
+    const res = await fetch('/api/drivers', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name: dName, phone: fullPhone }) })
     if (!res.ok) { const d = await res.json(); setErr(d.error ?? 'Error') }
-    else { setDName(''); setDPhone(''); onRefresh() }
+    else { setDName(''); setDCountryCode('+1'); setDPhone(''); onRefresh() }
     setSaving(false)
   }
 
@@ -140,10 +143,42 @@ function DriverModal({ drivers, trucks, onClose, onRefresh }: {
 
         {tab === 'drivers' && (
           <>
-            <form onSubmit={addDriver} className="flex gap-2 mb-4">
-              <input className="form-input flex-1" placeholder="Driver name *" value={dName} onChange={(e) => setDName(e.target.value)} required />
-              <input className="form-input w-32" placeholder="Phone" value={dPhone} onChange={(e) => setDPhone(e.target.value)} />
-              <button type="submit" className="btn-primary px-3 py-1.5 text-sm" disabled={saving}><Plus size={14} /></button>
+            <form onSubmit={addDriver} className="space-y-3 mb-5">
+              <div>
+                <label className="form-label">Driver Name *</label>
+                <input
+                  className="form-input"
+                  placeholder="e.g. John Smith"
+                  value={dName}
+                  onChange={(e) => setDName(e.target.value)}
+                  required
+                />
+              </div>
+              <div>
+                <label className="form-label">Phone Number</label>
+                <div className="flex gap-2">
+                  <input
+                    className="form-input text-center font-mono"
+                    style={{ width: 68 }}
+                    placeholder="+1"
+                    value={dCountryCode}
+                    onChange={(e) => setDCountryCode(e.target.value)}
+                    maxLength={5}
+                    title="Country code"
+                  />
+                  <input
+                    className="form-input flex-1"
+                    placeholder="555-867-5309"
+                    value={dPhone}
+                    onChange={(e) => setDPhone(e.target.value.replace(/[^\d\s\-().]/g, ''))}
+                    maxLength={14}
+                    title="10-digit phone number"
+                  />
+                </div>
+              </div>
+              <button type="submit" className="btn-primary w-full flex items-center justify-center gap-1.5 text-sm" disabled={saving}>
+                <Plus size={14} /> {saving ? 'Adding…' : 'Add Driver'}
+              </button>
             </form>
             <div className="space-y-1.5 max-h-64 overflow-y-auto">
               {drivers.length === 0 && <p className="text-sm text-gray-400 text-center py-4">No drivers yet.</p>}
