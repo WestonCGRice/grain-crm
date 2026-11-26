@@ -3,7 +3,7 @@ builder = "nixpacks"
 
 [deploy]
 startCommand = "sh scripts/start.sh"
-healthcheckPath = "/"
+healthcheckPath = "/login"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3

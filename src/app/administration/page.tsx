@@ -282,6 +282,7 @@ export default function AdministrationPage() {
               ) : users.length === 0 ? (
                 <div className="p-12 text-center text-gray-400">No users yet.</div>
               ) : (
+                <div className="overflow-x-auto">
                 <table>
                   <thead>
                     <tr>
@@ -296,7 +297,7 @@ export default function AdministrationPage() {
                       <th>2FA</th>
                       <th>Status</th>
                       <th>Created</th>
-                      <th style={{ width: 60 }}></th>
+                      <th className="sticky right-0 z-10" style={{ boxShadow: '-6px 0 8px -6px rgba(0,0,0,0.15)' }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -330,14 +331,14 @@ export default function AdministrationPage() {
                               : <span className={`badge ${u.mustSetPassword ? 'badge-yellow' : 'badge-green'}`}>{u.mustSetPassword ? 'Invite Pending' : 'Active'}</span>}
                           </td>
                           <td className="text-xs text-gray-500">{formatDate(u.createdAt)}</td>
-                          <td>
-                            <div className="flex items-center gap-1.5">
-                              <button className="text-gray-300 hover:text-[#1d2c3f]" onClick={() => openEdit(u)} title="Edit user"><Pencil size={13} /></button>
-                              <button className="text-gray-300 hover:text-blue-600" onClick={() => handleResendInvite(u)} title="Re-send invitation / reset password link"><MailIcon size={13} /></button>
+                          <td className="sticky right-0 bg-white" style={{ boxShadow: '-6px 0 8px -6px rgba(0,0,0,0.15)' }}>
+                            <div className="flex items-center gap-2 whitespace-nowrap">
+                              <button className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded border border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-[#1d2c3f]" onClick={() => openEdit(u)} title="Edit user"><Pencil size={12} /> Edit</button>
+                              <button className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded border border-blue-200 text-blue-700 bg-blue-50 hover:bg-blue-100" onClick={() => handleResendInvite(u)} title="Email a new setup link (password + two-factor) and clear any lockout"><MailIcon size={12} /> Re-send Invite</button>
                               {u.accountLocked && (
-                                <button className="text-red-400 hover:text-green-600" onClick={() => handleUnlock(u)} title="Unlock account"><Unlock size={13} /></button>
+                                <button className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded border border-green-200 text-green-700 bg-green-50 hover:bg-green-100" onClick={() => handleUnlock(u)} title="Unlock account"><Unlock size={12} /> Unlock</button>
                               )}
-                              <button className="text-gray-300 hover:text-red-500" onClick={() => handleDeleteUser(u)} disabled={u.id === session?.user?.id} title={u.id === session?.user?.id ? 'Cannot delete your own account' : 'Delete user'}><Trash2 size={13} /></button>
+                              <button className="flex items-center gap-1 text-xs font-medium px-2 py-1 rounded border border-gray-200 text-gray-500 hover:bg-red-50 hover:text-red-600 hover:border-red-200 disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-gray-500 disabled:hover:border-gray-200" onClick={() => handleDeleteUser(u)} disabled={u.id === session?.user?.id} title={u.id === session?.user?.id ? 'Cannot delete your own account' : 'Delete user'}><Trash2 size={12} /></button>
                             </div>
                           </td>
                         </tr>
@@ -345,6 +346,7 @@ export default function AdministrationPage() {
                     })}
                   </tbody>
                 </table>
+                </div>
               )}
             </div>
             <p className="mt-3 text-xs text-gray-400">* Access changes take effect the next time the user logs in. Admin users always have full access to all modules.</p>
